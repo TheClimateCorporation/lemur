@@ -1,0 +1,354 @@
+OVERVIEW
+
+ lemur is a tool to launch hadoop jobs locally or on EMR based on a configuration
+ file, referred to as a jobdef. The general command line format is:
+
+ lemur <command> <jobdef-file> [options] [remaining]
+
+ lemur help                    - display this help text
+ lemur run ./jobdef.clj        - Run a job on EMR
+ lemur dry-run ./jobdef.clj    - Dry-run, i.e. just print out what would be done
+ lemur start ./jobdef.clj      - Start an EMR cluster, but don't run the steps (jobs)
+ lemur local ./jobdef.clj      - Run the job using local hadoop (e.g. standalone mode)
+
+ lemur display-types      - Display the instance-types with basic stats and exit
+ lemur spot-price-history - Display the spot price history for the last day and exit
+
+ Examples:
+ lemur run path/to/your-jobdef.clj --foo --bar 1
+ lemur start src/main/clj/lemur/sample-jobdef.clj
+
+JOBDEF OVERVIEW
+
+ A jobdef file describes your EMR cluster and zero or more "steps".  A step is Amazon's
+ name for a task or job submitted to the cluster.  lemur reads your jobdef, which
+ defines a bunch of options inside (defcluster) and (defstep).  Finally, at the end
+ of your jobdef, you execute (fire! ...) to make things happen.  Also keep in mind that
+ the jobdef is an interpreted clj file, so you can insert arbitrary Clojure code to be
+ executed anywhere in the file (but see HOOKS below for a better way).
+
+ What happens when you call fire! is dependent on the lemur "command".  I.e. on the
+ command line, you enter something like
+
+   lemur run my-jobdef.clj [args]
+   or
+   lemur local my-jobdef.clj [args]
+
+ The word right after lemur is the "command".  The run command will start the EMR cluster
+ and submit your steps.  The local command will run your job on your workstation using
+ your local Hadoop installation.  Try "lemur help" for more commands.
+
+ A good starting point for a new job is to copy
+
+   src/main/clj/lemur/minimal-sample-jobdef.clj
+
+ Then refer to sample-jobdef.clj in the same directory for a more exhaustive list
+ of features and options with more examples and documentation.  WARNING: sample-jobdef.clj
+ is large.  You probably don't need most of it for typical jobs.
+
+SYNTAX
+
+ If you don't know Clojure, a few general rules about the sytntax used in the jobdef:
+
+ - Maps are wrapped in {}
+ - Keys begin with colon
+ - Strings are wrapped in double quotes. These are java strings, so you can include special
+   characters using Java syntax.  E.g. in "hello\n\tworld" n is a newline, \t is a tab.
+ - A list is wrapped in []. Commas between list items are optional and are treated like
+   white-space.  E.g. ["foo" "bar", "baz"] is a list of 3 strings. You can also use spaces,
+   tabs and new-lines between list items.
+
+BASE
+
+ You'll see a (use-base ...) section below. The use-base specifies another file that
+ should be included here.  The idea is that this file would set some default values and
+ behavior for you.  Most of the important stuff is in lemur.base, so you
+ will want to always include that one.
+
+OPTIONS
+
+ Many of the configuration blocks below (i.e defcluster, defstep, update-base) accept
+ key/value pairs, where the key is a keyword (i.e. starts with ":").  When fire! is
+ executed near the bottom of your job-def, the options from these sources are merged:
+
+   base          - from one or more files identified in (use-base ...)
+   cluster       - from your defcluster
+   step          - from the current defstep
+   profiles      - See PROFILES below
+   command-line  - options you specify on the lemur command line
+
+ The sources at the bottom take precedence.
+
+ The value for each key is evaluated at run time according to it's type.
+
+   * String - "foo"
+     Can contain variables which will be substituted at run time. The variables
+     are are enclosed in ${}.  For example
+       "${app}-${runtime}"
+     which would evaluate to something like "sample-2012-01-27-1200"
+
+   * Collection (or map) - ["foo" "bar"] or { :foo "1" }
+     Each value in the collection is evaluated (recursively) using these same rules.
+
+   * [Advanced option] A clojure function -
+     If you need some more complex logic, you can write a clojure function. If it is
+     a 1-arg function, it will be called with the options map.  A 0-arg function,
+     will simply be called. For example, you could define a function like:
+
+       (fn [eopts] (str (:app eopts) "-" (:runtime eopts)))
+
+     which would evaluate to the same value as the string example above. Note that
+     functions should be idempotent, and may be executed many times.
+
+     A helper, lfn, is available. lfn does two things. It creates a memoized function
+     (i.e. it only executes once for a given set of arguments-- after that the return
+     value is cached). And, second, lfn extracts the keys listed in it's first
+     argument from eopts.  Example:
+
+        (defcluster my-cluster
+          :foo 100
+          :bar "a"
+          :baz (lfn [foo bar] (str foo "-" bar)))
+
+     would assign a value of "100-a" to :baz
+
+   * Anything else - 1 or :foo
+     Everything else is just it's literal value
+
+ The variables available for string interpolation (or available in the eopts map in
+ the case of a function value), are all of the keys available in the base, cluster,
+ step and command-line options.  I.e. all the key values mentioned at the start of
+ this section.  This includes some key/values that are defined automatically:
+
+   :env          - The environment (as per env.properties)
+   :runtime      - The current time as "yyyy-mm-dd-hhmm" for UTC
+   :remaining    - A collection of String arguments, which are left over after the
+                   command-spec is used to parse the command line.
+   :cluster-name - The symbol at the start of your defcluster block
+   :step-name    - The symbol at the start of your defstep block
+   :jobdef-file  - The basename of the jobdef file (minus the "-jobdef.clj" suffix)
+   :run-id       - Used in the base path in S3, among other things.  Has a value of
+                   <app>/<runtime>-<8-char-uuid>, where <app> is the value of
+                   :jobdef-file by default
+
+ In addition, System Environment Variables are available by prefixing the name
+ with 'ENV.'; for example "my home dir is ${ENV.HOME}".
+
+ You might see an option represented in three different ways. The following all
+ refer to the same value:
+
+   :foo          - When used as a key in the jobdef
+   --foo         - When used on the command line
+   "${foo}"      - When used inside a string
+
+STANDARD JOB PATHS
+
+ There are standard paths (S3 or local) created for job jar, inputs, outputs, logs, etc.
+ These paths are referenced through the keys below. Their default values are also shown.
+
+   :base-uri "s3://${bucket}/runs/${run-id}"
+
+ In local mode (see LOCAL below), the base-uri will take on the value
+ configured for the :local profile. See PROFILES below. For example:
+
+   :local {:base-uri "/tmp/${run-id}"}
+
+ The other paths are relative to :base-uri, e.g.:
+
+   :log-uri "${base-uri}/emr-logs"
+   :data-uri "${base-uri}/data"
+   :jar-uri "${base-uri}/jar"
+
+JOB ARGS
+
+ lemur accepts a number of options and args specified on the command line. This is
+ distinct from the args (or "job args") that are passed to your hadoop job main-class
+ for each step. These job args are assembled from the key/value pairs in your defstep
+ and the command-line args that are given to lemur.
+
+ For the command-line arguments given to lemur, lemur first takes out the options that
+ it recognizes.  You can have lemur recognize additional options by putting a
+ (catch-args ...) block in your jobdef, as described in sample-jobdef.clj. Anything not
+ recognized in this way is (optionally) made available for your hadoop job.  I.e. these
+ "remaining" args can be "passed through" to your Hadoop main.
+
+ The complete spec for args includes these options (which must be specified in your
+ defstep).
+
+  :args.foo "100"
+  :args.passthrough true
+  :args.positional ["foo" "bar baz"]
+  :args.data-uri true
+
+ The name portion of :args.foo, i.e. "foo", can be any string. It is passed to
+ your hadoop main as "--foo" "100".  There can be zero or more key/value pairs of this
+ type.  Any arg specified in this way, automatically has it's name portion added
+ to (catch-args) if not already there.  The value you specify here will be the default.
+ In this case (catch-args [:foo "foo" "100"]).  This way, any arg can be overridden on
+ the command line (e.g. --foo 200).  See catch-args in the sample-jobdef for more.
+
+ Named args with a boolean values are treated specially.  For example:
+
+  :args.bar true
+  :args.qux false
+
+ In this case, the command line passed to your hadoop job would contain "--bar" with
+ no value and --qux would not be used at all.  I.e. these are boolean options and are
+ either present or not present; they are not followed by a value.  Like :args.foo above,
+ they are automatically added to (catch-args), but in this case, a '?' is appended to the
+ key name (e.g. :bar? and :qux?), to indicate that they are boolean options.
+
+ To turn a boolean value OFF from the lemur command line, you would say "--no-bar".  The
+ no- prefix on the option means set the option to false. Similarly, using no- on a
+ regular arg, like --no-foo, would set the value of :foo to nil.
+
+ The other keys above have special meaning.
+
+  :args.passthrough true  -- pass through the "remaining" args from the lemur command line,
+                             as explained above.  I.e. the value of (:remaining eopts)
+  :args.positional        -- specify some positional arguments
+  :args.data-uri true     -- include the value of the :data-uri key (see below)
+
+ Also note that the order that these options are specified in defstep is relevant. The
+ args are passed to your hadoop main in this order.
+
+ In addition, you can specify profiles to override these values, for example in
+ local mode (see PROFILES below).
+
+   :local {:args.foo "1"}
+
+LOCAL
+
+ When you execute lemur as "lemur local ...", instead of launching an EMR cluster,
+ lemur will start your local hadoop installation (which is generally configured for
+ Hadoop standalone mode).  You should have a Hadoop 0.20.x installation, with hadoop in
+ your PATH.
+
+ This is a great way to test your job locally, or might be appropriate for small jobs
+ or queries.
+
+TEST
+
+ A common use for local mode is to run a test.  For example, you might create a
+ profile called :test, and execute it like this:
+
+   lemur local :test ...
+
+ Then, in the :test profile, you can specify cluster and step option values / args
+ that are specific to your test.  Note that lemur attributes no special significance
+ to the :test profile.  It is just a conventional usage.
+
+PROFILES
+
+ Profiles are a general override mechanism where a nested map of key/value
+ pairs can be specified in your jobdef.  If the profile is active, then the
+ entries in the nested map override settings of the same name.  Profiles can be
+ created in defcluster, defstep, or the base.
+
+ A profile can also influence which steps are run as part of (fire!).  See
+ details in sample-jobdef.clj.
+
+ There are a few particular cases to note.
+
+ 1. Environment.  A profile can be picked up from the WB config system (i.e.
+    env.properties).  A comma separated list of profile names (each beginning with
+    a colon), can be set as the value of lemur.profiles in env.properties.  Most
+    commonly, when you run lemur in ec2 (e.g. staging, integration, etc) the :ec2
+    profile is enabled.  I.e. env properties will have:
+
+      lemur.profiles = :ec2
+
+    When you do this, keys from the nested map :ec2 will override the keys of
+    the same name in the outer map.  So, for example, given:
+
+      (defcluster my-cluster
+        ...
+        :num-instances 1
+        :ec2 {:num-instances 10})
+
+    You will get "--foo" "1" when running on ec2.
+
+ 2. Local.  When running in local mode, the profile :local
+    is automatically active.
+
+ 3. EC2.  Weatherbill's config enables a profile called :ec2, which is only active
+    when lemur is started on an ec2 host.  Note that this applies to where lemur is
+    run, and NOT where your hadoop job runs (locally or EMR).
+
+ The leading colon (:) at the front of the profile name, should be considered part
+ of the name, and is required.
+
+ Multiple profiles can be active at once.  For example, running a test
+ in local mode. In this common case, the active profiles are
+ [:local, :test]. The right-most profiles takes precedence.
+
+ Profiles can be enabled on the command line. For example, to enable the :test
+ and :foo profiles (in order)
+
+   lemur local :test :foo jobdef.clj ...
+
+HOOKS
+
+While you can include arbitrary Clojure code anywhere, use hooks for a more
+structured approach to executing actions as part of your job.  Hooks are simply
+functions that can be executed before and/or after the main fire! action.
+
+To be clear, "after fire!" means after the fire! functions returns.  I.e. after
+the EMR launch request has been sent (not when the job completes).  Or, in the
+case of local mode, fire! does return AFTER the hadoop job completes.
+
+Common uses might be to validate the results of a local test, to download some files
+locally before execution starts, or to modify an input file before it is used.
+
+Add hooks anytime before fire! is called, using the add-hooks function:
+
+  (add-hooks ([optional-conditional-expr] function-to-execute)* )
+
+It takes a zero or more functions, each one optionally preceded by a conditional
+expression.  If there is a conditional expression, the fn following it is only
+added if the expression is true.
+
+The function-to-execute can be a 1-arg or 2-arg fn or have both 1-arg and
+2-arg signatures (see defn at http://clojure.org/functional_programming for
+details on how to make a fn with multiple arities).
+
+The 1-arg signatures are called, in the order they are added, before
+fire!  I.e. these are "pre hooks".  The arg value is:
+
+  1. eopts: the options map
+
+The 2-arg signatures are called, in reverse order, after fire!  I.e.
+these are "post hooks".  The argument values are:
+
+  1. eopts: The options map
+  2. state: the result of the 1-arg call for the same function. If there is no
+            1-arg signature for this fn, then nil.
+
+For example:
+
+  (defn- say-hello [eopts] (println "Hello"))
+
+  (add-hooks
+    (or (run?) (local?)) say-hello
+    (fn [eopts _] (println "goodbye")))
+
+As you can see, either named functions or anonymous functions work.  This example
+will print "Hello" when your job is started with 'lemur run' or 'lemur local', and
+in all cases, it will print "goodbye" afterward.
+
+Another example, using a fn with both 1-arg and 2-arg signatures, with state:
+
+  (defn- greet
+    ([eopts] (System/currentTimeMillis))
+    ([eopts state] (println "fire! time in millis: " (- (System/currentTimeMillis) state))))
+
+  (add-hooks
+    greet)
+
+No conditional expression was provided, so the greet hook is always added. It has
+both a 1-arg and a 2-arg signature.  The 1-arg is triggered before fire!, and the
+2-arg is triggered after (and is given the result of the 1-arg call as it's second
+argument).
+
+Recommendation: Have your fn test for (dry-run?) and print some useful diagnostic
+output in this case.
