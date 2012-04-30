@@ -32,9 +32,11 @@ DEPS_CP=$BASE/lib/*
 
 CLASSPATH=$LEMUR_CP:$DEPS_CP:$LEMUR_EXTRA_CLASSPATH
 
-LOCAL_LOG_FILE="-Dlog4j.configuration=file:$BASE/resources/log4j.properties"
+if [ -f "$BASE/resources/log4j.properties" ]; then
+  LEMUR_LOG_FILE="-Dlog4j.configuration=file:$BASE/resources/log4j.properties"
+fi
 
-cmd="$JAVA $LOCAL_LOG_FILE $JAVA_OPTS -cp $CLASSPATH lemur.core"
+cmd="$JAVA $LEMUR_LOG_FILE $JAVA_OPTS -cp $CLASSPATH lemur.core"
 if [ "$1" == "dry-run" ]; then echo $cmd "$@"; fi
 
 $cmd "$@"
