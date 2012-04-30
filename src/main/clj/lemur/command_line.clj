@@ -237,10 +237,14 @@
    [:runtime-jar
     (str "The hadoop job jar, should be an 's3://' path. Default "
          "is to use the jar uploaded by --jar-src-path.")]
+   [:copy-runtime-jar?
+    "If using runtime-jar, make a copy of it under jar-uri" false]
    [:jar-uri "S3 prefix for where the jar uri will be saved."]
    [:data-uri "S3 prefix for the data directory."]
    [:base-uri "S3 prefix for the base directory."]
-   [:scripts-src-path "The local path with bootstrap scripts"]
+   [:scripts-src-path
+    (str "Local path with bootstrap scripts to be uploaded. To use them, you also need"
+         "to specify :bootstrap-action.N options (see sample-jobdef.clj for details)")]
    [:jar-src-path
     (str "The local path of a JAR to upload. If specified "
          "this local jar file will be uploaded to S3.")]

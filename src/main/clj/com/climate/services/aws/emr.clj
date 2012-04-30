@@ -1,6 +1,6 @@
 (ns com.climate.services.aws.emr
   (:use
-    com.climate.services.aws.core)
+    com.climate.services.aws.common)
   (:require
     [lemur.util :as util]
     [clojure.tools.logging :as log]

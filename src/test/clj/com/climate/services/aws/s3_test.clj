@@ -4,6 +4,7 @@
     lemur.test
     clojure.test)
   (:require
+    [com.climate.services.aws.common :as awscommon]
     [clojure.tools.logging :as log])
   (:import
     java.io.File
@@ -12,7 +13,7 @@
 (def test-bucket "lemur.unit.s3")
 
 (use-fixtures :once
-  (fn [f] (binding [*s3* (s3 (aws-creds))] (f))))
+  (fn [f] (binding [*s3* (s3 (awscommon/aws-credential-discovery))] (f))))
 
 (deftest test-slash+derivitives
   (is= [false "foo/" "foo" false "/foo" "foo"]
@@ -110,7 +111,7 @@
 (deftest ^{:integration true} test-cp
   (with-bucket test-bucket
     (fn []
-      (let [dir (File. "src/test/clj/resources")
+      (let [dir (File. "src/test/resources")
             s3p (partial s3path test-bucket)
             tmp-dir (Files/createTempDir)
             tmp-dir-src (.getPath tmp-dir)]
@@ -122,16 +123,16 @@
           (cp dir (s3path test-bucket "test-upload-dir/"))
           (is (object? test-bucket "test-upload-dir/resources/sample.csv"))
           ; upload dir (str with no slash at the end) to dir
-          (cp "src/test/clj/resources" (s3p "foo2/"))
+          (cp "src/test/resources" (s3p "foo2/"))
           (is (object? test-bucket "foo2/resources/sample.csv"))
           ; upload dir (str with slash at the end) to dir
-          (cp "src/test/clj/resources/" (s3p "foo3/"))
+          (cp "src/test/resources/" (s3p "foo3/"))
           (is (object? test-bucket "foo3/sample.csv"))
           ; upload file to file
-          (cp "src/test/clj/resources/dates-file.txt" (s3p "foo/bar.txt"))
+          (cp "src/test/resources/dates-file.txt" (s3p "foo/bar.txt"))
           (is (object? test-bucket "foo/bar.txt"))
           ; upload file to dir
-          (cp "src/test/clj/resources/dates-file.txt" (s3p "foo/baz/"))
+          (cp "src/test/resources/dates-file.txt" (s3p "foo/baz/"))
           (is (object? test-bucket "foo/baz/dates-file.txt")))
         (testing "s3 download"
           (cp (s3p "foo/bar.txt") tmp-dir)

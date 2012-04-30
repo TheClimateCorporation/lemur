@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#
-# WORK IN PROGRESS
-#
-
 if [ -z "$JAVA_HOME" ]; then
   echo Exiting: environment variable JAVA_HOME must be set
   exit 1
@@ -11,34 +7,34 @@ fi
 
 JAVA=$JAVA_HOME/bin/java
 
-BASE=`dirname $0`/..
-BASE=`cd $BASE; pwd -P`
+BASEDIR=`dirname $0`
+BASE=`cd $BASEDIR/..; pwd -P`
 
-# TODO this will need to change to be Generic (non-TCC specific)
-
-# TODO need to be able to inject your organizations' classpath, one option:
-#   LEMUR_ORG_CP=blah; bin/lemur ...
-#   And this script would override _ORG_CP with $LEMUR_ORG_CP from the env
-
-# Want this wrapper to work for both deployed apps, and local on dev's workstation
-if [[ "$BASE" = /export/disk0/wb/bin/* ]]; then
-  #CLASSPATH=$BASE/jars/wb-hadoop-java.jar:$BASE/lib/java/*
-  _LEMUR_CP=""
-  _DEPS_CP=$BASE/lib/java/*
-  _ORG_CP=$BASE/jars/wb-hadoop-java.jar
-else
-  #CLASSPATH=$BASE/bin/target/classes:$BASE/bin/target/lib/*:$BASE/clj/wb-clj/src:$BASE/clj/wb-clj/classes:$BASE/clj/wb-clj/lib/*
-  #_LEMUR_CP=$BASE/src/main/clj
-  _LEMUR_CP=`echo $BASE/lemur-*.jar`
-  _DEPS_CP=$BASE/lib/*
-  _ORG_CP=$BASE/../../bin/target/classes:$BASE/../../bin/target/lib/*:$BASE/../wb-clj/lib/*:$BASE/../wb-clj/src
+# Look along-side this lemur executable for the AWS credentials
+if [ -z "$AWS_CREDENTIAL_FILE" -a -f "$BASEDIR/credentials.json" ]; then
+  export AWS_CREDENTIAL_FILE="$BASEDIR/credentials.json"
 fi
 
-CLASSPATH=$_LEMUR_CP:$_DEPS_CP:$_ORG_CP
+# Warn if LEMUR_EXTRA_CLASSPATH is not set
+if [ -z "$LEMUR_EXTRA_CLASSPATH" ]; then
+  echo WARNING: You might want to set env variable LEMUR_EXTRA_CLASSPATH to include \
+       extra code on lemur\'s classpath. Generally you would want to do this, so \
+       that lemur can find the bases \(or other functions\) used in your jobdef.
+fi
+
+if [ -f $BASE/lemur-*.jar ]; then
+  LEMUR_CP=`echo $BASE/lemur-*.jar`
+else
+  LEMUR_CP=$BASE/src/main/clj:$BASE/classes
+fi
+
+DEPS_CP=$BASE/lib/*
+
+CLASSPATH=$LEMUR_CP:$DEPS_CP:$LEMUR_EXTRA_CLASSPATH
 
 LOCAL_LOG_FILE="-Dlog4j.configuration=file:$BASE/resources/log4j.properties"
+
 cmd="$JAVA $LOCAL_LOG_FILE $JAVA_OPTS -cp $CLASSPATH lemur.core"
-if [ "$1" == "dry-run" ]; then
-  echo $cmd "$@"
-fi
+if [ "$1" == "dry-run" ]; then echo $cmd "$@"; fi
+
 $cmd "$@"

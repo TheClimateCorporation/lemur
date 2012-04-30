@@ -1,6 +1,6 @@
 (ns com.climate.services.aws.ec2
   (:use
-    com.climate.services.aws.core)
+    com.climate.services.aws.common)
   (:require
     clojure.stacktrace)
   (:import

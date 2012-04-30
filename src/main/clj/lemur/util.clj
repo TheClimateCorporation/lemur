@@ -10,7 +10,6 @@
     [com.climate.yaml :as yaml]
     [com.climate.services.aws.s3 :as s3])
   (:import
-    java.net.URLEncoder
     [org.yaml.snakeyaml Yaml]
     java.lang.ProcessBuilder
     java.io.File
@@ -140,21 +139,6 @@
   (binding [yaml/*yaml* (Yaml. opts)]
     (yaml/generate-string {name data})))
 
-(defn hipchat
-  [room from data]
-  (let [token "49fa36905c9324a43aadf65e2fa6aa"
-        data-with-breaks (str "<pre>" data "</pre>")
-        body (format "room_id=%s&from=%s&message=%s"
-                     room from (URLEncoder/encode data-with-breaks "UTF8"))
-        result (clj-http.client/post
-                 (str "http://api.hipchat.com/v1/rooms/message?format=json&auth_token="
-                      token)
-                 {:body body
-                  :content-type "application/x-www-form-urlencoded"})]
-    (log/debug (str "hipchat encoded data " data-with-breaks))
-    (log/info (str "Hipchat message sent. Result = " result))
-    result))
-
 (defn file-exists?
   "Tests that a path exists. path is either a path to a local file, or an S3
   path (of an object) starting with s3://"
@@ -246,7 +230,7 @@
                    (reduce merge-entry (or m1 {}) (seq m2)))]
       (reduce merge2 maps))))
 
-(defn careful-merge
+(defn lemur-merge
   "Verify the keys being merged to make sure that bootstrap-actions do
   not overlap unless the value is nil. This fn is intended to avoid unintentional
   overrides (without being explicit) when merging maps."

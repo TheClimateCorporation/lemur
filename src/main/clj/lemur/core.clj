@@ -15,6 +15,7 @@
     [clojure.tools.logging :as log]
     [lemur.util :as util]
     [com.climate.services.aws
+     [common :as awscommon]
      [ec2 :as ec2]
      [s3 :as s3]
      [emr :as emr]])
@@ -189,7 +190,7 @@ calls launch              - take action (upload files, start cluster, etc)
             :exit-code 22))
     ; merge
     (if profile
-      (dissoc (util/careful-merge m profile-map) profile)
+      (dissoc (util/lemur-merge m profile-map) profile)
       m)))
 
 (defn full-options
@@ -228,7 +229,7 @@ calls launch              - take action (upload files, start cluster, etc)
    ;   Finally
    ;     remove all entries where the value is nil
    (let [cluster-step-opts
-           (util/careful-merge
+           (util/lemur-merge
              (or base (context-get :base))
              (context-get :option-defaults)
              cluster
@@ -236,7 +237,7 @@ calls launch              - take action (upload files, start cluster, etc)
          opts-after-profiles
            (reduce apply-profile cluster-step-opts (context-get :profiles))
          opts-after-command-line
-           (util/careful-merge
+           (util/lemur-merge
              opts-after-profiles
              (context-get :options)
              (select-keys @context [:command :jobdef-path :remaining]))]
@@ -266,7 +267,7 @@ calls launch              - take action (upload files, start cluster, etc)
   in a map like {:num-instances 10} to change the default number of instances for
   a new EMR cluster to 10.  Each value in the map can be a literal or a function
   (see the note on MAP VALUES in sample-jobdef.clj)"
-  (context-update [:base] #(util/careful-merge % m)))
+  (context-update [:base] #(util/lemur-merge % m)))
 
 (defn- enable-debugging-step?
   [step]
@@ -275,9 +276,15 @@ calls launch              - take action (upload files, start cluster, etc)
 
 (defn- step-jar
   [estep]
-  (or (:step-jar estep)
-      (str (:jar-uri estep) "/"
-           (ccio/basename (or (:runtime-jar estep) (:jar-src-path estep))))))
+  (cond
+    (:step-jar estep)
+      (:step-jar estep)
+    (and (:runtime-jar estep) (:copy-runtime-jar? estep))
+      (str (:jar-uri estep) "/" (ccio/basename (:runtime-jar estep)))
+    (:runtime-jar estep)
+      (:runtime-jar estep)
+    :else
+      (str (:jar-uri estep) "/" (ccio/basename (:jar-src-path estep)))))
 
 (defn- step-args
   [estep]
@@ -358,12 +365,7 @@ calls launch              - take action (upload files, start cluster, etc)
         (let [base-dir (io/file (:base-uri eopts))]
           (.mkdirs base-dir)
           (spit (io/file base-dir "METAJOB.yml")
-                (s/join "---\n" metajob)))))
-    (when (:metajob-hipchat-room eopts)
-      (util/hipchat (:metajob-hipchat-room eopts) "lemur"
-        (format "LAUNCH: %s on %s nodes\nCOMMENT: %s\n\n%s"
-          (:app eopts) (:num-instances eopts) (:comment eopts)
-          (s/join "---\n" metajob))))))
+                (s/join "---\n" metajob)))))))
 
 (defmulti launch
   (fn [command & args]
@@ -515,128 +517,127 @@ calls launch              - take action (upload files, start cluster, etc)
 (defn- fire*
   [command cluster steps]
   (let [evaluating-opts (evaluating-map (full-options cluster) steps)
-        aws-creds (:aws-creds evaluating-opts)]
-    (binding [s3/*s3* (s3/s3 aws-creds)
-              emr/*emr* (emr/emr aws-creds)
-              ec2/*ec2* (ec2/ec2 aws-creds)]
-      (let [;When (dry-run?), validate won't exit immediately, so save the results to output at the end
-            validation-result
-              (validate
-                (context-get :validators)
-                evaluating-opts
-                (context-get :command-spec)
-                (when-not (dry-run?) 3))]
+        ;When (dry-run?), validate won't exit immediately, so save the results to output at the end
+        validation-result (validate
+                            (context-get :validators)
+                            evaluating-opts
+                            (context-get :command-spec)
+                            (when-not (dry-run?) 3))]
 
-        (log/debug (str "FULL EVALUATING OPTIONS " evaluating-opts))
+    (log/debug "FULL EVALUATING OPTIONS" evaluating-opts)
 
-        (log/debug "MARC bucket " (:bucket evaluating-opts))
+    ;;; config
 
-        ;;; config
-
-        (let [[spot-task-type spot-task-bid spot-task-num]
-                (emr/parse-spot-task-group (:spot-task-group evaluating-opts))
-              ba-vector (doall (mk-bootstrap-actions evaluating-opts))
-              jobflow-options
-                {:bootstrap-actions (map second ba-vector)
-                 :log-uri (:log-uri evaluating-opts)
-                 :master-type (:master-instance-type evaluating-opts)
-                 :slave-type (:slave-instance-type evaluating-opts)
-                 :num-instances (util/as-int (:num-instances evaluating-opts))
-                 :spot-task-type spot-task-type
-                 :spot-task-bid spot-task-bid
-                 :spot-task-num spot-task-num
-                 :keep-alive (or (:keep-alive? evaluating-opts) (start?))
-                 :keypair (:keypair evaluating-opts)
-                 :ami-version (:ami-version evaluating-opts)}
-              steps
-                (if (:enable-debugging? evaluating-opts)
-                  (cons (emr/debug-step-config) steps)
-                  steps)
-              uploads  ; Constructs upload-directives suitable for (util/upload)
-                {:dest-working-dir
-                   (:data-uri evaluating-opts)
-                 :jars
-                   (if (:no-jar? evaluating-opts)
-                     []
-                     [[(or (:runtime-jar evaluating-opts) (:jar-src-path evaluating-opts))
-                      (step-jar evaluating-opts)]])
-                 :bootstrap-actions
-                   [[(s3/slash$ (:scripts-src-path evaluating-opts))
-                     (s3/s3path (:bucket evaluating-opts) (:std-scripts-prefix evaluating-opts))]]
-                 :jobdef-cluster
-                   (parse-upload-property evaluating-opts)
-                 :jobdef-step
-                   (->> steps
-                    (filter map?)
-                    ; filter from the original defstep construct, rather than the estep, so that
-                    ; we don't get :upload entries from the base or cluster
-                    (filter :upload)
-                    ; Make sure we don't pick up any upload directives from the base or cluster
-                    (map (partial evaluating-step (dissoc (context-get :base) :upload) (dissoc cluster :upload)))
-                    (map (juxt :step-name parse-upload-property))
-                    (into {}))}
-              display-in-metajob
-                (util/collectify (:display-in-metajob evaluating-opts))
-              metajob
-                (filter identity (flatten
-                  [(util/mk-yaml "Profiles" (map str (context-get :profiles))
-                     (doto (DumperOptions.) (.setDefaultScalarStyle DumperOptions$ScalarStyle/PLAIN)))
-                   (util/mk-yaml "Command Line Options"
-                     (->> (context-get :command-spec)
-                       (map first)
-                       ; don't include the default options-- they are represented in Environment or Joblow Options below
-                       (#(clojure.set/difference (set %) (set (map first init-command-spec))))
-                       (select-keys evaluating-opts))
+    (let [[spot-task-type spot-task-bid spot-task-num]
+            (emr/parse-spot-task-group (:spot-task-group evaluating-opts))
+          ba-vector (doall (mk-bootstrap-actions evaluating-opts))
+          jobflow-options
+            {:bootstrap-actions (map second ba-vector)
+             :log-uri (:log-uri evaluating-opts)
+             :master-type (:master-instance-type evaluating-opts)
+             :slave-type (:slave-instance-type evaluating-opts)
+             :num-instances (util/as-int (:num-instances evaluating-opts))
+             :spot-task-type spot-task-type
+             :spot-task-bid spot-task-bid
+             :spot-task-num spot-task-num
+             :keep-alive (or (:keep-alive? evaluating-opts) (start?))
+             :keypair (:keypair evaluating-opts)
+             :ami-version (:ami-version evaluating-opts)}
+          steps
+            (if (:enable-debugging? evaluating-opts)
+              (cons (emr/debug-step-config) steps)
+              steps)
+          uploads  ; Constructs upload-directives suitable for (util/upload)
+            {:dest-working-dir
+               (:data-uri evaluating-opts)
+             :jars
+               (cond
+                 (and (:runtime-jar evaluating-opts) (:copy-runtime-jar? evaluating-opts))
+                   [[(:runtime-jar evaluating-opts) (step-jar evaluating-opts)]]
+                 (not (:runtime-jar evaluating-opts))
+                   [[(:jar-src-path evaluating-opts) (step-jar evaluating-opts)]]
+                 (:runtime-jar evaluating-opts)
+                   [])
+             :bootstrap-actions
+               (if-let [src (:scripts-src-path evaluating-opts)]
+                 [[(s3/slash$ src)
+                   (s3/s3path (:bucket evaluating-opts) (:std-scripts-prefix evaluating-opts))]]
+                 [])
+             :jobdef-cluster
+               (parse-upload-property evaluating-opts)
+             :jobdef-step
+               (->> steps
+                (filter map?)
+                ; filter from the original defstep construct, rather than the estep, so that
+                ; we don't get :upload entries from the base or cluster
+                (filter :upload)
+                ; Make sure we don't pick up any upload directives from the base or cluster
+                (map (partial evaluating-step (dissoc (context-get :base) :upload) (dissoc cluster :upload)))
+                (map (juxt :step-name parse-upload-property))
+                (into {}))}
+          display-in-metajob
+            (util/collectify (:display-in-metajob evaluating-opts))
+          metajob
+            (filter identity (flatten
+              [(util/mk-yaml "Profiles" (map str (context-get :profiles))
+                 (doto (DumperOptions.) (.setDefaultScalarStyle DumperOptions$ScalarStyle/PLAIN)))
+               (util/mk-yaml "Command Line Options"
+                 (->> (context-get :command-spec)
+                   (map first)
+                   ; don't include the default options-- they are represented in Environment or Joblow Options below
+                   (#(clojure.set/difference (set %) (set (map first init-command-spec))))
+                   (select-keys evaluating-opts))
+                 (doto (DumperOptions.) (.setDefaultFlowStyle DumperOptions$FlowStyle/BLOCK)))
+               (util/mk-yaml "Environment"
+                 (select-keys
+                   evaluating-opts
+                   (concat [:command :app :comment :username :run-id :jar-src-path :runtime-jar :base-uri]
+                           display-in-metajob))
+                 (doto (DumperOptions.) (.setDefaultFlowStyle DumperOptions$FlowStyle/BLOCK)))
+               (if-not (local?)
+                 (vector
+                   (util/mk-yaml "Jobflow Options"
+                     (merge (select-keys evaluating-opts [:emr-name]) (dissoc jobflow-options :bootstrap-actions))
                      (doto (DumperOptions.) (.setDefaultFlowStyle DumperOptions$FlowStyle/BLOCK)))
-                   (util/mk-yaml "Environment"
-                     (select-keys
-                       evaluating-opts
-                       (concat [:command :app :comment :username :run-id :jar-src-path :runtime-jar :base-uri]
-                               display-in-metajob))
+                   (util/mk-yaml "Hadoop Config" (hadoop-config-details evaluating-opts)
                      (doto (DumperOptions.) (.setDefaultFlowStyle DumperOptions$FlowStyle/BLOCK)))
-                   (if-not (local?)
-                     (vector
-                       (util/mk-yaml "Jobflow Options"
-                         (merge (select-keys evaluating-opts [:emr-name]) (dissoc jobflow-options :bootstrap-actions))
-                         (doto (DumperOptions.) (.setDefaultFlowStyle DumperOptions$FlowStyle/BLOCK)))
-                       (util/mk-yaml "Hadoop Config" (hadoop-config-details evaluating-opts)
-                         (doto (DumperOptions.) (.setDefaultFlowStyle DumperOptions$FlowStyle/BLOCK)))
-                       (util/mk-yaml "Bootstrap Actions" (bootstrap-actions-details ba-vector)
-                         (doto (DumperOptions.) (.setDefaultScalarStyle DumperOptions$ScalarStyle/PLAIN)))))
-                   (util/mk-yaml "Hooks" (map (comp (memfn getName) class) (context-get :hooks))
-                     (doto (DumperOptions.) (.setDefaultScalarStyle DumperOptions$ScalarStyle/PLAIN)))
-                   (util/mk-yaml "Uploads" (uploads-details uploads)
-                     (doto (DumperOptions.) (.setDefaultFlowStyle DumperOptions$FlowStyle/BLOCK)))
-                   (util/mk-yaml "Steps" (steps-details cluster steps)
-                     (doto (DumperOptions.) (.setDefaultScalarStyle DumperOptions$ScalarStyle/PLAIN)))]))]
+                   (util/mk-yaml "Bootstrap Actions" (bootstrap-actions-details ba-vector)
+                     (doto (DumperOptions.) (.setDefaultScalarStyle DumperOptions$ScalarStyle/PLAIN)))))
+               (util/mk-yaml "Hooks" (map (comp (memfn getName) class) (context-get :hooks))
+                 (doto (DumperOptions.) (.setDefaultScalarStyle DumperOptions$ScalarStyle/PLAIN)))
+               (util/mk-yaml "Uploads" (uploads-details uploads)
+                 (doto (DumperOptions.) (.setDefaultFlowStyle DumperOptions$FlowStyle/BLOCK)))
+               (util/mk-yaml "Steps" (steps-details cluster steps)
+                 (doto (DumperOptions.) (.setDefaultScalarStyle DumperOptions$ScalarStyle/PLAIN)))]))]
 
-          ;;; informational
+      ;;; informational
 
-          ; Write details to stdout
-          (println "")
-          (println (s/join metajob))
-          (println "")
+      ; Write details to stdout
+      (println "")
+      (println (s/join metajob))
+      (println "")
 
-          ;;; trigger hooks and launch
+      ;;; trigger hooks and launch
 
-          ; hooks w/ arity 1 are called pre-launch, those w/ arity 2 are called post-launch
-          (let [;pre-hooks
-                hook-precall-results
-                  (doall (for [f (context-get :hooks)]
-                    (when (util/has-arity? f 1) (f evaluating-opts))))]
-            ; launch the job
-            (launch command cluster steps jobflow-options uploads metajob)
-            ; post-hooks
-            (doall
-              (for [[f state] (reverse (map vector (context-get :hooks) hook-precall-results))]
-                (when (util/has-arity? f 2)
-                  (f evaluating-opts state)))))
+      ; hooks w/ arity 1 are called pre-launch, those w/ arity 2 are called post-launch
+      (let [eopts-with-mj (evaluating-map (assoc (full-options cluster) :lemur-metajob metajob) steps)
+            ;pre-hooks
+            hook-precall-results
+              (doall (for [f (context-get :hooks)]
+                (when (util/has-arity? f 1) (f eopts-with-mj))))]
+        ; launch the job
+        (launch command cluster steps jobflow-options uploads metajob)
+        ; post-hooks
+        (doall
+          (for [[f state] (reverse (map vector (context-get :hooks) hook-precall-results))]
+            (when (util/has-arity? f 2)
+              (f eopts-with-mj state)))))
 
-          (when validation-result
-            (println validation-result))
+      (when validation-result
+        (println validation-result))
 
-          ;;; return metajob
-          metajob)))))
+      ;;; return metajob
+      metajob)))
 
 (defn- steps-for-active-profiles
   [args]
@@ -705,6 +706,8 @@ calls launch              - take action (upload files, start cluster, etc)
       (require '[com.climate.services.aws.emr   :as emr])
       (require '[com.climate.services.aws.s3    :as s3])
       (require '[com.climate.services.aws.ec2   :as ec2])
+      ; Include the standard base file
+      (use-base 'lemur.base)
       ; load the job file here... it is up to the job file to call fire! with
       ; the appropriate cluster and step(s)
       (when-not file
@@ -853,35 +856,40 @@ calls launch              - take action (upload files, start cluster, etc)
                     details))
   (quit))
 
-(defn -main
-  "Run lemur help."
-  [& [command & args]]
-  (add-command-spec* context init-command-spec)
-  (let [[profiles remaining] (split-with #(.startsWith % ":") args)
-        jobdef-path (first remaining)]
-    (add-profiles profiles)
-    (context-set :jobdef-path jobdef-path)
-    (context-set :raw-args (rest remaining))
-    (context-set :command command)
-    (case command
-      ("run" "start" "dry-run" "local")
-        (execute-jobdef jobdef-path)
-      "display-types"
-        (display-types)
-      "spot-price-history"
-        (spot-price-history)
-      "formatted-help"
-        (execute-jobdef jobdef-path)
-      "help"
-        (if jobdef-path
-          (execute-jobdef jobdef-path)
-          (quit :msg (slurp (clojure.java.io/resource "src/main/clj/com/climate/lemur/help.txt"))))
-      (quit :msg "Unrecognized lemur command" :cmdspec (context-get :command-spec) :exit-code 1)))
-  (quit))
-
 (defmacro when-local-test
   "Execute the body if the :test profile is active and lemur was run with the local command."
   [& body]
   `(when (and (profile? :test) (local?))
      true ;default if body is empty
      ~@body))
+
+(defn -main
+  "Run lemur help."
+  [& [command & args]]
+  (add-command-spec* context init-command-spec)
+  (let [[profiles remaining] (split-with #(.startsWith % ":") args)
+        aws-creds (awscommon/aws-credential-discovery)
+        jobdef-path (first remaining)]
+    (add-profiles profiles)
+    (context-set :jobdef-path jobdef-path)
+    (context-set :raw-args (rest remaining))
+    (context-set :command command)
+    (binding [s3/*s3* (s3/s3 aws-creds)
+              emr/*emr* (emr/emr aws-creds)
+              ec2/*ec2* (ec2/ec2 aws-creds)]
+      (case command
+        ("run" "start" "dry-run" "local")
+          (execute-jobdef jobdef-path)
+        "display-types"
+          (display-types)
+        "spot-price-history"
+          (spot-price-history)
+        "formatted-help"
+          (execute-jobdef jobdef-path)
+        "help"
+          (if jobdef-path
+            (execute-jobdef jobdef-path)
+            (quit :msg (slurp (io/resource "help.txt"))))
+        (quit :msg "Unrecognized lemur command" :cmdspec (context-get :command-spec) :exit-code 1))))
+  (quit))
+

@@ -22,12 +22,11 @@
 ;;; Set the defaults
 
 ; Essentially, this does a Clojure (use), so all symbols from each base are automatically
-; refered into your jobdef's namespace.  If this causes name collisions or you want more
+; referred into your jobdef's namespace.  If this causes name collisions or you want more
 ; control, you can use require or other standard Clojure constructs (e.g. :only).
 (use-base
-  ; these defaults are applied in order
-  ; N.B. always include lemur.base, unless you really know what you're doing
-  'lemur.base)
+  ; optional, lemur.base is always included automatically
+  'your.org.base)
 
 ;;; Command line processing
 
@@ -81,21 +80,33 @@
 
 ;;; Custom options validation
 
-; OPTIONAL. A function that will receive options (processed command line and default options)
-; for validation, and return an error string on failure.
-; See lemur.core/mk-validator for a helper function.
-; RECOMMENDED defining validators can save time by avoiding a cluster launch that will
+; OPTIONAL. A set of functions that are run before your job is started to validate the
+; command line options, environment or anything else you like.
+;
+; Each function is either a 0-arg function or a 1-arg function.  In the latter case, eopts
+; is passed in.  eopts includes all your values in defcluster, the command line options,
+; defaults, values from bases, etc).  The function returns a String, vector of Strings
+; or false on failure (the strings will be output as the failure message).  On success
+; the fn should return nil or true or '().
+;
+; You can write your own functions for arbitrary checks (consider using the helper
+; functions: lemur.core/lfn, and/or lemur.common/mk-validator). However, for many common
+; cases, you can use lemur.common/val-opts and lemur.common/val-remaining; which provide
+; a declarative method for specifying validations.
+;
+; RECOMMENDED defining validators can save time by avoiding a cluster launch that fails
 ;             because of missing/bad options. In particular, remember to write a validator
 ;             to check :remaining. Any options that are not caught are left in remaining,
 ;             so if someone mis-types an option it could show up here.
-; EXAMPLE
-;(set-cluster-options-validator
-;  ;Validate that either --force is specified or --dataset with 'ahps' or 'stage_iv'.
-;  (fn [eopts]
-;    (let [[opts _] (extract-cl-args [:dataset :force?] (:remaining eopts))]
-;      (if-not
-;        (or (opts :force?) (contains? #{"ahps" "stage_iv"} (opts :dataset)))
-;        "If not --force, --dataset must be specified as 'ahps' or 'stage_iv'")))))
+;
+; EXAMPLES
+;(add-validators
+;  (lfn [dataset]
+;    (if-not
+;      (contains? #{"ahps" "stage_iv"} dataset)
+;      "--dataset must be specified as 'ahps' or 'stage_iv'"))
+;  (val-opts :file :days-file)
+;  (val-opts :required :numeric :num-days))
 
 ;;; Hooks (actions)
 
@@ -126,10 +137,6 @@
   ; Enable this feature, to save the details of the job (options, bootstrap-actions,
   ; steps with their args, uploads, args, etc) to "${base-uri}/METAJOB.yml".
   ;:metajob-file true
-
-  ; Enable this feature to post the metajob info to hipchat. The following example
-  ; would post to the room "marctest".
-  ;:metajob-hipchat-room "marctest"
 
   ; The bucket name in s3 where emr logs, data, scripts, etc will be stored.
   ;:bucket "com.your-co.${env}.hadoop"
@@ -254,7 +261,7 @@
   ; Modify the hadoop configuration. Any key starting with ":hadoop-config." is
   ; concatenated to the default config (see :hadoop-config.* in
   ; lemur.base/update-base). The part of the key following the dot is ignored,
-  ; but serves to avoid overlap with hadoop-config keys from any included base..
+  ; but serves to avoid overlap with hadoop-config keys from any included base.
   ; Use "lemur dry-run <job-def.clj>" to see the current hadoop-config. keys.
   ;
   ; The value is a collection of strings, which are the args passed to Amazon's hadoop
@@ -276,11 +283,6 @@
   ; specify a Map of name value like this.
   ; EXAMPLE
   ;:local {:hadoop-env {"HADOOP_HEAPSIZE" "2048"}}
-
-  ; Defaults for command line options
-  ; Any of the command line options (whether standard, added by a base, or defined by
-  ; you in this jobdef); can have default values specified here. Example:
-  ;:dummy "dummy-default"
 
   )
 

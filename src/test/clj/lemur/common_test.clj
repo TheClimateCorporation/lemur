@@ -16,8 +16,8 @@
                :primitive-int 100
                :float "0.5"
                :negative "-1.0"
-               :a-file "src/test/clj/resources/sample.csv"
-               :a-dir "src/test/clj/resources"
+               :a-file "src/test/resources/sample.csv"
+               :a-dir "src/test/resources"
                :non-word "a b"}]
     (fact "valid tests"
       ((val-opts :required [:keypair]) eopts) => val-ok
@@ -61,7 +61,3 @@
         => (contains "Remaining [{:foo \"a\", :baz? true} [\"--quux\" \"extra\"]]: custom help")
       ((val-remaining :mini-spec mini-spec :required [:foo :bar :baz] :empty true) remaining2)
         => (contains #"Remaining.*required.*--bar"))))
-
-(deftest test-aws-credentials-discovery
-  (fact
-    (aws-credentials-discovery) => #(and (instance? File %) (.exists %))))

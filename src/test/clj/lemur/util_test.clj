@@ -12,34 +12,34 @@
     java.io.File
     com.google.common.io.Files))
 
-(deftest test-careful-merge
+(deftest test-lemur-merge
   ;bootstrap actions
   (let [m1 {:bootstrap-action.1 "a1" :b "b1"}
         m2 {:bootstrap-action.1 nil :c "c2"}
         m3 {:bootstrap-action.1 "a3" :b "b3"}]
-    (is= {:bootstrap-action.1 nil :b "b1" :c "c2"} (careful-merge m1 m2))
-    (is= m1 (careful-merge m1 nil))
-    (is= {:bootstrap-action.1 "a3" :b "b3" :c "c2"} (careful-merge m2 m3))
-    (is= {:bootstrap-action.1 "a3" :b "b3" :c "c2"} (careful-merge m1 m2 m3))
+    (is= {:bootstrap-action.1 nil :b "b1" :c "c2"} (lemur-merge m1 m2))
+    (is= m1 (lemur-merge m1 nil))
+    (is= {:bootstrap-action.1 "a3" :b "b3" :c "c2"} (lemur-merge m2 m3))
+    (is= {:bootstrap-action.1 "a3" :b "b3" :c "c2"} (lemur-merge m1 m2 m3))
     (is= {:a 1 :c {:a 20 :d 10 :e 30}}
-         (careful-merge
+         (lemur-merge
            {:a 1 :c {:a 10 :d 10}}
            {:a 1 :c {:a 20 :e 30}}))
-    (is (thrown? IllegalStateException (careful-merge m1 m3))))
+    (is (thrown? IllegalStateException (lemur-merge m1 m3))))
   ; :display-in-metajob
   (let [u1 {:foo 1 :display-in-metajob :foo}
         u2 {:bar 2 :display-in-metajob [:bar]}]
-    (is= {:foo 1 :bar 2 :display-in-metajob [:foo :bar]} (careful-merge u1 u2))
-    (is= {:foo 1 :display-in-metajob :foo} (careful-merge u1 {})))
+    (is= {:foo 1 :bar 2 :display-in-metajob [:foo :bar]} (lemur-merge u1 u2))
+    (is= {:foo 1 :display-in-metajob :foo} (lemur-merge u1 {})))
   ; :upload
   (let [u1 {:foo 1 :upload ["u1"]}
         u2 {:foo 2 :upload "u2"}
         u3 {:foo 3 :upload ["u3"]}
         u4 {:foo 4 :upload (fn [] "u4")}]
-    (is= {:foo 2 :upload ["u1" "u2"]} (careful-merge u1 u2))
-    (is= {:foo 3 :upload ["u1" "u3"]} (careful-merge u1 u3))
-    (is= "u4" ((:upload (careful-merge u1 u4))))
-    (let [result (careful-merge u4 u1)]
+    (is= {:foo 2 :upload ["u1" "u2"]} (lemur-merge u1 u2))
+    (is= {:foo 3 :upload ["u1" "u3"]} (lemur-merge u1 u3))
+    (is= "u4" ((:upload (lemur-merge u1 u4))))
+    (let [result (lemur-merge u4 u1)]
       (is= 1 (:foo result))
       (is= "u4" ((-> result :upload first)))
       (is= "u1" (-> result :upload second))))
@@ -47,8 +47,8 @@
   (let [r1 {:foo 1 :remaining 1}
         r2 {:foo 2 :bar 2}
         r3 {:foo 3 :remaining 3}]
-    (is= {:foo 2 :bar 2 :remaining 1} (careful-merge r1 r2))
-    (is (thrown? IllegalStateException (careful-merge r1 r3)))))
+    (is= {:foo 2 :bar 2 :remaining 1} (lemur-merge r1 r2))
+    (is (thrown? IllegalStateException (lemur-merge r1 r3)))))
 
 (deftest test-as-int
   (is= 0 (as-int nil))
@@ -74,7 +74,7 @@
   ; case here, to make sure the multimethod is hooked-up
   (let [tmp-dir (Files/createTempDir)]
     ; one file, args: File, str
-    (cp (io/file "src/test/clj/resources" "sample.csv") tmp-dir)
+    (cp (io/file "src/test/resources" "sample.csv") tmp-dir)
     (is (.exists (io/file tmp-dir "sample.csv")))))
 
 (deftest test-mk-absolute-path
@@ -104,19 +104,19 @@
 
 (deftest test-upload
   (testing "uploads from local to local."
-    (let [dir (File. "src/test/clj/resources")
+    (let [dir (File. "src/test/resources")
           tmp-dir (Files/createTempDir)
           is-in-tmp-dir (fn [rel-path] (is (file-exists? (str tmp-dir "/" rel-path))))]
-      (upload [["src/test/clj/resources/sample.csv"]] tmp-dir)
+      (upload [["src/test/resources/sample.csv"]] tmp-dir)
       (is-in-tmp-dir "sample.csv")
-      (upload [["src/test/clj/resources/sample.csv" "a.csv"]] tmp-dir)
+      (upload [["src/test/resources/sample.csv" "a.csv"]] tmp-dir)
       (is-in-tmp-dir "a.csv")
-      (upload [["src/test/clj/resources/sample.csv" "d1/a.csv"]
-               ["src/test/clj/resources/sample.csv" "d1/"]]
+      (upload [["src/test/resources/sample.csv" "d1/a.csv"]
+               ["src/test/resources/sample.csv" "d1/"]]
               tmp-dir)
       (is-in-tmp-dir "d1/a.csv")
       (is-in-tmp-dir "d1/sample.csv")
-      (upload [["src/test/clj/resources/sample.csv" (str tmp-dir "/b.csv")]])
+      (upload [["src/test/resources/sample.csv" (str tmp-dir "/b.csv")]])
       (is-in-tmp-dir "b.csv"))))
 
 (deftest ^{:integration true} test-s3-upload-and-file-exists?
@@ -126,7 +126,7 @@
     ; s3 tests
     (let [bkt "lemur.unit2"]
       (with-bucket bkt (fn []
-        (upload [["src/test/clj/resources/sample.csv"]] (str "s3://" bkt "/dest/"))
+        (upload [["src/test/resources/sample.csv"]] (str "s3://" bkt "/dest/"))
         (is (file-exists? (s3/s3path bkt "dest/sample.csv")))
         (is (not (file-exists? (s3/s3path bkt "dest/non-existing")))))))))
 

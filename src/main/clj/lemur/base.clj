@@ -1,12 +1,13 @@
 (ns lemur.base
   (:use
     lemur.core
-    [lemur.common :only [val-opts aws-credentials-discovery]]
+    [lemur.common :only [val-opts]]
+    [com.climate.services.aws.common :only [aws-credential-discovery]]
     [lemur.bootstrap-actions :only [mk-hadoop-config]])
   (:require
     [clojure.tools.logging :as log]
     [lemur.util :as util]
-    [com.climate.services.aws [s3 :as s3] [core :as awscore]]
+    [com.climate.services.aws [s3 :as s3]]
     [com.climate.io :as ccio])
   (:import
     java.io.File
@@ -27,7 +28,7 @@
   (local?) clear-base-uri)
 
 (add-validators
-  (val-opts :required [:scripts-src-path :keypair])
+  (val-opts :required [:keypair])
   (val-opts :required :word :app)
   (not (local?))
     (val-opts :required :bucket)
@@ -42,11 +43,7 @@
 
     :local
       {:run-path "${app}"
-       :base-uri "/tmp/lemur/${run-path}"
-       :metajob-hipchat-room nil}
-
-    :aws-creds-file (aws-credentials-discovery)
-    :aws-creds (lfn [aws-creds-file] (awscore/load-credentials aws-creds-file))
+       :base-uri "/tmp/lemur/${run-path}"}
 
     :runtime (util/time-str "yyyy-MM-dd-HHmm")
     :uuid8 (util/uuid 8)
@@ -67,6 +64,10 @@
     :jar-uri "${base-uri}/jar"
 
     :bootstrap-action.100
-      ["Hadoop Config"
-       "s3://elasticmapreduce/bootstrap-actions/configure-hadoop"
-       mk-hadoop-config]))
+      (fn [eopts]
+        (when-let [hc (seq (mk-hadoop-config eopts))]
+          ["Hadoop Config"
+           "s3://elasticmapreduce/bootstrap-actions/configure-hadoop"
+           hc]))
+
+    ))

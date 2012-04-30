@@ -10,7 +10,7 @@
     com.google.common.io.Files))
 
 (deftest test-cp
-  (let [dir (File. "src/test/clj/resources")
+  (let [dir (File. "src/test/resources")
         tmp-dir (Files/createTempDir)
         tmp-dir-src (.getPath tmp-dir)
         exists? (fn [f] (.exists (io/file f)))]

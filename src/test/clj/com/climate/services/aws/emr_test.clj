@@ -5,7 +5,10 @@
     clojure.test
     midje.sweet)
   (:require
-    [com.climate.services.aws [s3 :as s3] [ec2 :as ec2]])
+    [com.climate.services.aws
+     [s3 :as s3]
+     [ec2 :as ec2]
+     [common :as awscommon]])
   (:import
     [com.amazonaws.services.elasticmapreduce.model
      JobFlowDetail
@@ -18,10 +21,12 @@
 (def bucket "lemur.unit.emr")
 (def test-flow-name "com.climate.services.aws.emr-test")
 
+(def aws-creds (awscommon/aws-credential-discovery))
+
 (use-fixtures :once
   (fn [f]
-    (binding [s3/*s3* (s3/s3 (aws-creds))
-               *emr* (emr (aws-creds))]
+    (binding [s3/*s3* (s3/s3 aws-creds)
+              *emr* (emr aws-creds)]
       (f))))
 
 ;Starts a short-lived, 1 instance cluster. Has no bootstrap actions and no
@@ -57,7 +62,7 @@
                        "s3://elasticmapreduce/bootstrap-actions/configure-hadoop"
                        ["-m" "mapred.map.tasks.speculative.execution=false"])]
          :log-uri (str "s3://" bucket)
-         :keypair (:keypair (aws-creds))
+         :keypair (:keypair aws-creds) ; the elastic-mapreduce credentials.json file as a keypair entry
          :ami-version "latest"
          :num-instances 2
          :master-type "m1.xlarge"

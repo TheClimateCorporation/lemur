@@ -40,9 +40,9 @@ JOBDEF OVERVIEW
 
  A good starting point for a new job is to copy
 
-   src/main/clj/lemur/minimal-sample-jobdef.clj
+   examples/minimal-sample-jobdef.clj
 
- Then refer to sample-jobdef.clj in the same directory for a more exhaustive list
+ Then refer to examples/sample-jobdef.clj for a more exhaustive list
  of features and options with more examples and documentation.  WARNING: sample-jobdef.clj
  is large.  You probably don't need most of it for typical jobs.
 
@@ -130,6 +130,8 @@ OPTIONS
    :run-id       - Used in the base path in S3, among other things.  Has a value of
                    <app>/<runtime>-<8-char-uuid>, where <app> is the value of
                    :jobdef-file by default
+   :run-path     - Equal to :run-id, except for 'lemur local', in which case it is equal
+                   to :app
 
  In addition, System Environment Variables are available by prefixing the name
  with 'ENV.'; for example "my home dir is ${ENV.HOME}".
@@ -146,12 +148,12 @@ STANDARD JOB PATHS
  There are standard paths (S3 or local) created for job jar, inputs, outputs, logs, etc.
  These paths are referenced through the keys below. Their default values are also shown.
 
-   :base-uri "s3://${bucket}/runs/${run-id}"
+   :base-uri "s3://${bucket}/runs/${run-path}"
 
  In local mode (see LOCAL below), the base-uri will take on the value
  configured for the :local profile. See PROFILES below. For example:
 
-   :local {:base-uri "/tmp/${run-id}"}
+   :local {:base-uri "/tmp/lemur/${run-path}"}
 
  The other paths are relative to :base-uri, e.g.:
 
@@ -206,7 +208,7 @@ JOB ARGS
 
   :args.passthrough true  -- pass through the "remaining" args from the lemur command line,
                              as explained above.  I.e. the value of (:remaining eopts)
-  :args.positional        -- specify some positional arguments
+  :args.positional []     -- specify some positional arguments
   :args.data-uri true     -- include the value of the :data-uri key (see below)
 
  Also note that the order that these options are specified in defstep is relevant. The
@@ -248,32 +250,8 @@ PROFILES
  A profile can also influence which steps are run as part of (fire!).  See
  details in sample-jobdef.clj.
 
- There are a few particular cases to note.
-
- 1. Environment.  A profile can be picked up from the WB config system (i.e.
-    env.properties).  A comma separated list of profile names (each beginning with
-    a colon), can be set as the value of lemur.profiles in env.properties.  Most
-    commonly, when you run lemur in ec2 (e.g. staging, integration, etc) the :ec2
-    profile is enabled.  I.e. env properties will have:
-
-      lemur.profiles = :ec2
-
-    When you do this, keys from the nested map :ec2 will override the keys of
-    the same name in the outer map.  So, for example, given:
-
-      (defcluster my-cluster
-        ...
-        :num-instances 1
-        :ec2 {:num-instances 10})
-
-    You will get "--foo" "1" when running on ec2.
-
- 2. Local.  When running in local mode, the profile :local
-    is automatically active.
-
- 3. EC2.  Weatherbill's config enables a profile called :ec2, which is only active
-    when lemur is started on an ec2 host.  Note that this applies to where lemur is
-    run, and NOT where your hadoop job runs (locally or EMR).
+ There is one implicit profile which is activated automatically.  When running in
+ local mode, the profile :local is on.
 
  The leading colon (:) at the front of the profile name, should be considered part
  of the name, and is required.
@@ -287,15 +265,20 @@ PROFILES
 
    lemur local :test :foo jobdef.clj ...
 
+ Commonly, you would create profiles for :test values, and maybe a profile for :live
+ or :deployed options.
+
 HOOKS
 
 While you can include arbitrary Clojure code anywhere, use hooks for a more
 structured approach to executing actions as part of your job.  Hooks are simply
 functions that can be executed before and/or after the main fire! action.
 
-To be clear, "after fire!" means after the fire! functions returns.  I.e. after
-the EMR launch request has been sent (not when the job completes).  Or, in the
-case of local mode, fire! does return AFTER the hadoop job completes.
+To be clear, "after fire!" means after the fire! function returns.  I.e. after
+the EMR launch request has been sent (NOT when the job completes).  BUT, in the
+case of local mode, fire! does return AFTER the hadoop job completes.  If you want
+to do something after the cluster starts or after your Step completes, see 'wait' and
+'wait-on-step' in examples/sample-jobdef.clj.
 
 Common uses might be to validate the results of a local test, to download some files
 locally before execution starts, or to modify an input file before it is used.
@@ -304,7 +287,7 @@ Add hooks anytime before fire! is called, using the add-hooks function:
 
   (add-hooks ([optional-conditional-expr] function-to-execute)* )
 
-It takes a zero or more functions, each one optionally preceded by a conditional
+It takes zero or more functions, each one optionally preceded by a conditional
 expression.  If there is a conditional expression, the fn following it is only
 added if the expression is true.
 

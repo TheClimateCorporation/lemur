@@ -15,6 +15,7 @@
     [com.climate.services.aws.s3 :as s3]
     [com.climate.services.aws.emr :as emr])
   (:import
+    java.net.URLEncoder
     java.io.IOException
     java.io.File))
 
@@ -243,22 +244,15 @@
         (str "***** FAILURE ON " name " *****")))
     (println "***** SUCCESS *****")))
 
-;;; Discovery
-
-(defn aws-credentials-discovery
-  "Attempt to discover the path of your AWS credentials in JSON format.
-     - Check for `which elasic-mapreduce`/credentials.json.
-     - TODO look alongside jobdef
-     - TODO look in PWD
-     - TODO in tools/lemur, basedir/credentials.json"
-  []
-  (let [emr-dir (try (sh/sh "which" "elastic-mapreduce")
-                     (catch IOException iox
-                       (log/trace iox "Not able to find elastic-mapreduce cli.")))
-        path (io/file
-               (-> emr-dir :out s/trim ccio/dirname)
-               "credentials.json")]
-    (if (.exists path)
-      path
-      (log/warn "Unable to locate credentials.json. Try installing"
-                "elastic-mapreduce cli and make sure it is in your PATH."))))
+(defn hipchat
+  [token room from data]
+  (let [data-with-breaks (str "<pre>" data "</pre>")
+        body (format "room_id=%s&from=%s&message=%s"
+                     room from (URLEncoder/encode data-with-breaks "UTF8"))
+        result (clj-http.client/post
+                 (str "http://api.hipchat.com/v1/rooms/message?format=json&auth_token=" token)
+                 {:body body
+                  :content-type "application/x-www-form-urlencoded"})]
+    (log/debug (str "hipchat encoded data " data-with-breaks))
+    (log/info (str "Hipchat message sent. Result = " result))
+    result))

@@ -5,6 +5,7 @@
     [clojure.tools.logging :as log])
   (:import
     java.io.File
+    java.util.Properties
     [org.apache.commons.io FileUtils]))
 
 (defn cp
@@ -52,3 +53,12 @@
     (instance? File x) (.. x getCanonicalFile getName)
     (= x "/") ""
     :default (last (s/split x #"/"))))
+
+(defn load-properties
+  "Read properties from read-able. Will coerce read-able into a reader
+  using clojure.java.io/reader"
+  ([read-able] (load-properties read-able (Properties.)))
+  ([read-able default-properties]
+     (with-open [f (io/reader read-able)]
+       (doto (Properties. default-properties)
+         (.load f)))))

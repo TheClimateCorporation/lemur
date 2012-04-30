@@ -5,7 +5,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (use-base
-  'lemur.base
+  ; optional, lemur.base is always included automatically
   'your.org.base)
 
 (catch-args
