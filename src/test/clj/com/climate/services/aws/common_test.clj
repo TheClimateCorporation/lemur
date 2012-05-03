@@ -46,5 +46,4 @@
       (provided
         (aws-cf-env) => nil
         (sh/sh "which" "elastic-mapreduce") => nil)))
-
   )

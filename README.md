@@ -23,18 +23,37 @@ Lemur is a tool to launch hadoop jobs locally or on EMR, based on a configuratio
 - Import common options, functionality and behavior to avoid duplication (i.e. DRY principle)
 - Pass-through command-line options, allows you to specify extra args on the command line that are meaningful to your hadoop main function, but are unknown to lemur or your jobdef
 
+### A Note About the Ruby elastic-mapreduce CLI tool
+
+Lemur does not try to replace elastic-mapreduce.  While there is some overlap, lemur is focused on launching.  It provides no replacement for many common activities that you will find in elastic-mapreduce.  For example, "elastic-mapreduce --list".  I recommend that you install elastic-mapreduce along-side lemur (or rely on the AWS Console for those activities).
+
 ### Installation
 
 1. Download the tar-gzip from the GitHub Downloads link
 1. Expand into some install location
 1. set LEMUR_HOME to the top of the install path
 1. set LEMUR_EXTRA_CLASSPATH to any classpath entries (colon separated) that you want lemur to include when it runs your jobdef. The classpath that includes you base files, or other functions or libraries for use by your jobdefs for example.
+1. [optional] set AWS_CREDENTIAL_FILE to a file with AWS credentials (see AWS Credentials below).
 
+### AWS Credentials
+
+Interestingly, the various AWS services' supporting command-line tools all have different methods for getting access-key and secret-key.
+
+elastic-mapreduce uses a JSON file.  CloudWatch, CloudSearch use a properties file identified by AWS_CREDENTIAL_FILE (although the key names are different in each case), and s3cmd looks for yet another properties file in ~/.s3cfg.
+
+Lemur will accept credentials in any of those formats. You can set the AWS_CREDENTIAL_FILE environment variable to a path of one of those files.  Or, it will look in either the PWD for credentials.json; or in `which elastic-mapreduce`/credentials.json.  If you want more detail, see com.climate.services.aws.common/aws-credential-discovery in this package.
+
+For reference, the JSON format is:
+
+```
+{"access_id": "EXAMPLEDV82HJBSHFAKE",
+ "private_key": "Sample/GudsbGjjJuz0gf6asdgvxasdasdv521gd"}
+```
 ### Compatibility
 
 Clojure 1.2 or Clojure 1.3 (although I haven't done extensive testing with 1.3 yet).
 
-I've used lemur on Mac OS X and Linux.  It should work on Windows, but you will need to make your own version of the Bash script bin/lemur (or use cygwin).  I would be interested to know if this works on Windows, please let me know if you try it (patches welcome).
+I've used lemur on Mac OS X and Linux.  It MAY work on Windows (if you use cygwin).  If you try it on Windows, I would be interested in hearing about your experience (patches welcome).
 
 ### Usage
 
@@ -59,6 +78,6 @@ lemur start clj/wb-clj/src/weatherbill/lemur/sample-jobdef.clj
 
 - Execute 'bin/lemur help' for more details on the concepts
 - Look at examples/sample-jobdef.clj for details on all options that you can use in your jobdef
-- You can ask questions on the Google Group
+- You can ask questions on TBD (mslimotte @ gmail dot com, for now)
 
 Feedback and feature requests are welcome!

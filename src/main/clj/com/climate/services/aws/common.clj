@@ -5,6 +5,7 @@
     [com.climate.shell :as sh]
     [clojure.data.json :as json]
     [clojure.tools.logging :as log]
+    [clojure.tools.trace :as trace]
     [clojure.java.io :as io])
   (:import
     java.io.IOException
@@ -48,8 +49,9 @@
                                 (ccio/load-properties f)
                                 " => " props)
                      ; AWSSecretKey/AWSAccessKeyId -- this is the format used by AWS CloudWatch
-                     {:access_id (or (get props "accessKey") (get props "AWSSecretKey"))
-                      :private_key (or (get props "secretKey") (get props "AWSAccessKeyId"))
+                     ; access_key/secret_key -- this format is for the s3cmd .s3cfg file
+                     {:access_id (or (get props "accessKey") (get props "AWSSecretKey") (get props "access_key"))
+                      :private_key (or (get props "secretKey") (get props "AWSAccessKeyId") (get props "secret_key"))
                       :keypair (get props "keypair")})))]
     (when result (log/debug "Loaded aws-credentials" result))
     result))
@@ -68,15 +70,14 @@
 
   throws RuntimeException is the aws creds can not be found and loaded."
   [& [search-path]]
-  ; TODO support the s3cmd file format (~/.s3cfg)
   (or
-    (log/debug "Looking for aws creds in" (aws-cf-env) "or PWD.")
+    (log/debugf "Looking for aws creds using AWS_CREDENTIAL_FILE (%s) or PWD." (aws-cf-env))
     (load-credentials (io/file (aws-cf-env)))
     (when search-path
-      (log/debug "Looking for aws creds in" search-path)
-      (load-credentials (io/file search-path))
-      (log/debug "Looking for aws creds at " (str search-path "/credentials.json"))
-      (load-credentials (io/file search-path "credentials.json")))
+      (or (log/debug "Looking for aws creds in" search-path)
+          (load-credentials (io/file search-path))
+          (log/debug "Looking for aws creds at " (str search-path "/credentials.json"))
+          (load-credentials (io/file search-path "credentials.json"))))
     (log/debug "Looking for aws creds in elastic-mapreduce install directory")
     (let [result (try (sh/sh "which" "elastic-mapreduce")
                       (catch IOException iox
