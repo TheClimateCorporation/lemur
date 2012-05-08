@@ -1,4 +1,19 @@
+;Copyright 2012 The Climate Corporation
+;
+;Licensed under the Apache License, Version 2.0 (the "License");
+;you may not use this file except in compliance with the License.
+;You may obtain a copy of the License at
+;
+;    http://www.apache.org/licenses/LICENSE-2.0
+;
+;Unless required by applicable law or agreed to in writing, software
+;distributed under the License is distributed on an "AS IS" BASIS,
+;WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;See the License for the specific language governing permissions and
+;limitations under the License.
+;
 ; Based on https://github.com/richhickey/clojure/blob/4bea7a529bb14b99d48758cfaf0d71af0997f0ff/src/clj/clojure/java/shell.clj
+; Original copyright notice
 ;
 ;   Copyright (c) Rich Hickey. All rights reserved.
 ;   The use and distribution terms for this software are covered by the

@@ -1,4 +1,4 @@
-(defproject lemur "0.9.6"
+(defproject lemur "0.9.7-SNAPSHOT"
 
   :description "Lemur is a tool to launch hadoop jobs locally or on EMR
                 based on a configuration file, referred to as a jobdef."
