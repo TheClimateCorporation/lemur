@@ -59,8 +59,18 @@
 (defn aws-cf-env []
   (System/getenv "AWS_CREDENTIAL_FILE"))
 
+(defn aws-keys-env []
+  (let [creds
+          {:access_id (System/getenv "LEMUR_AWS_ACCESS_KEY")
+           :private_key (System/getenv "LEMUR_AWS_SECRET_KEY")
+           :keypair (System/getenv "LEMUR_AWS_KEYPAIR")}]
+    (when (:access_id creds)
+      (log/debug "Loaded aws-credentials" creds)
+      creds)))
+
 (defn aws-credential-discovery
   "Attempt to discover the path of your AWS credential file.
+     - Look for explicit settings in the ENV: LEMUR_AWS_ACCESS_KEY, LEMUR_AWS_SECRET_KEY
      - Look for a path identified by environment variable AWS_CREDENTIAL_FILE
      - Look in the PWD (present working dir) for credentials.json
      - Look for credentials.json by search-path, or at top of dir search-path
@@ -71,6 +81,8 @@
   throws RuntimeException is the aws creds can not be found and loaded."
   [& [search-path]]
   (or
+    (log/debugf "Looking for explicit aws creds LEMUR_AWS_ACCESS_KEY and LEMUR_AWS_SECRET_KEY." (aws-cf-env))
+    (aws-keys-env)
     (log/debugf "Looking for aws creds using AWS_CREDENTIAL_FILE (%s) or PWD." (aws-cf-env))
     (load-credentials (io/file (aws-cf-env)))
     (when search-path
@@ -91,9 +103,10 @@
           load-credentials)))
     (throw (RuntimeException.
       (if (aws-cf-env)
-        (format "Can not find or read the aws credential file identified by AWS_CREDENTIAL_FILE='%s'" aws-cf-env)
+        (format "Can not find or read the aws credential file identified by AWS_CREDENTIAL_FILE='%s'" (aws-cf-env))
         (str "Can not find or read the aws credential file. Try one of "
-             "a) setting env variable AWS_CREDENTIAL_FILE, "
-             "b) installing elastic-mapreduce cli and make sure it is configured and in your PATH, "
-             "c) Creating a credentials.json file in the PWD, where "
+             "a) setting env variables LEMUR_AWS_ACCESS_KEY, LEMUR_AWS_SECRET_KEY; "
+             "b) setting env variable AWS_CREDENTIAL_FILE; "
+             "c) installing elastic-mapreduce cli and make sure it is configured and in your PATH; "
+             "d) Creating a credentials.json file in the PWD, where "
              "credentials.json contains {\"access_id\": \"EXAMPLE\", \"private_key\": \"Example\"}."))))))

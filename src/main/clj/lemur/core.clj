@@ -300,7 +300,7 @@ calls launch              - take action (upload files, start cluster, etc)
     :else
       (str (:jar-uri estep) "/" (ccio/basename (:jar-src-path estep)))))
 
-(defn- step-args
+(defn-  step-args
   [estep]
   ; error on extra args, not in defstep
   (let [args-in-step-without-order
@@ -389,7 +389,7 @@ calls launch              - take action (upload files, start cluster, etc)
       (keyword command))))
 
 (defmethod launch :local
-  [command cluster steps jobflow-options uploads metajob]
+  [command _ cluster steps jobflow-options uploads metajob]
   (let [steps (filter (complement enable-debugging-step?) steps)]
     (save-metajob cluster steps metajob)
     (doseq [step steps]
@@ -404,9 +404,9 @@ calls launch              - take action (upload files, start cluster, etc)
               (step-args estep)]
 
         ; copy files locally (think about making these symlinks instead)
-        (util/upload (:jars uploads))
-        (util/upload (:jobdef-cluster uploads) (:dest-working-dir uploads))
-        (util/upload (mapcat val (:jobdef-step uploads)) (:dest-working-dir uploads))
+        (util/upload (:show-progress? estep) (:jars uploads))
+        (util/upload (:show-progress? estep) (:jobdef-cluster uploads) (:dest-working-dir uploads))
+        (util/upload (:show-progress? estep) (mapcat val (:jobdef-step uploads)) (:dest-working-dir uploads))
 
         ; verify hadoop location and version
 
@@ -441,31 +441,30 @@ calls launch              - take action (upload files, start cluster, etc)
               (quit :msg "hadoop process failed" :exit-code (:exit result)))))))))
 
 (defmethod launch :run-or-start
-  [command cluster steps jobflow-options uploads metajob]
+  [command eopts cluster steps jobflow-options uploads metajob]
   ; upload files
   (if (run?)
-    (util/upload (mapcat val (:jobdef-step uploads)) (:dest-working-dir uploads)))
-  (util/upload (:bootstrap-actions uploads))
-  (util/upload (:jars uploads))
-  (util/upload (:jobdef-cluster uploads) (:dest-working-dir uploads))
+    (util/upload (:show-progress? eopts) (mapcat val (:jobdef-step uploads)) (:dest-working-dir uploads)))
+  (util/upload (:show-progress? eopts) (:bootstrap-actions uploads))
+  (util/upload (:show-progress? eopts) (:jars uploads))
+  (util/upload (:show-progress? eopts) (:jobdef-cluster uploads) (:dest-working-dir uploads))
   ; Write details to metajob file
   (save-metajob cluster steps metajob)
   ; launch
-  (let [eopts (evaluating-map (full-options cluster) steps)]
-    (let [request-ts (System/currentTimeMillis)
-          steps (if (run?)
-                  (mk-steps cluster steps)
-                  (filter enable-debugging-step? steps))
-          jobflow-id (emr/start-job-flow
-                       (:emr-name eopts)
-                       steps
-                       jobflow-options)]
-      (println "JobFlow id:" jobflow-id)
-      (context-set :jobflow-id jobflow-id)
-      (context-set :request-ts request-ts))))
+  (let [request-ts (System/currentTimeMillis)
+        steps (if (run?)
+                (mk-steps cluster steps)
+                (filter enable-debugging-step? steps))
+        jobflow-id (emr/start-job-flow
+                     (:emr-name eopts)
+                     steps
+                     jobflow-options)]
+    (println "JobFlow id:" jobflow-id)
+    (context-set :jobflow-id jobflow-id)
+    (context-set :request-ts request-ts)))
 
 (defmethod launch :dry-run
-  [command cluster steps jobflow-options uploads metajob]
+  [command eopts cluster steps jobflow-options uploads metajob]
   (println "dry-run, not launching."))
 
 (defn- steps-details
@@ -640,7 +639,7 @@ calls launch              - take action (upload files, start cluster, etc)
               (doall (for [f (context-get :hooks)]
                 (when (util/has-arity? f 1) (f eopts-with-mj))))]
         ; launch the job
-        (launch command cluster steps jobflow-options uploads metajob)
+        (launch command evaluating-opts cluster steps jobflow-options uploads metajob)
         ; post-hooks
         (doall
           (for [[f state] (reverse (map vector (context-get :hooks) hook-precall-results))]

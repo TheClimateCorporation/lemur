@@ -121,16 +121,18 @@
     (let [dir (File. "src/test/resources")
           tmp-dir (Files/createTempDir)
           is-in-tmp-dir (fn [rel-path] (is (file-exists? (str tmp-dir "/" rel-path))))]
-      (upload [["src/test/resources/sample.csv"]] tmp-dir)
+      (upload true [["src/test/resources/sample.csv"]] tmp-dir)
       (is-in-tmp-dir "sample.csv")
-      (upload [["src/test/resources/sample.csv" "a.csv"]] tmp-dir)
+      (upload true [["src/test/resources/empty-file.txt"]] tmp-dir)
+      (is-in-tmp-dir "empty-file.txt")
+      (upload false [["src/test/resources/sample.csv" "a.csv"]] tmp-dir)
       (is-in-tmp-dir "a.csv")
-      (upload [["src/test/resources/sample.csv" "d1/a.csv"]
-               ["src/test/resources/sample.csv" "d1/"]]
-              tmp-dir)
+      (upload false [["src/test/resources/sample.csv" "d1/a.csv"]
+                     ["src/test/resources/sample.csv" "d1/"]]
+                    tmp-dir)
       (is-in-tmp-dir "d1/a.csv")
       (is-in-tmp-dir "d1/sample.csv")
-      (upload [["src/test/resources/sample.csv" (str tmp-dir "/b.csv")]])
+      (upload false [["src/test/resources/sample.csv" (str tmp-dir "/b.csv")]])
       (is-in-tmp-dir "b.csv"))))
 
 (deftest ^{:integration true} test-s3-upload-and-file-exists?
@@ -140,7 +142,7 @@
     ; s3 tests
     (let [bkt "lemur.unit2"]
       (with-bucket bkt (fn []
-        (upload [["src/test/resources/sample.csv"]] (str "s3://" bkt "/dest/"))
+        (upload false [["src/test/resources/sample.csv"]] (str "s3://" bkt "/dest/"))
         (is (file-exists? (s3/s3path bkt "dest/sample.csv")))
         (is (not (file-exists? (s3/s3path bkt "dest/non-existing")))))))))
 

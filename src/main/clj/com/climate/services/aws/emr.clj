@@ -26,6 +26,8 @@
      ActionOnFailure
      KeyValue]))
 
+; TODO All functions that use this dynamic var should have an additional fn
+;      signature where the object can be passed in explicitly
 (def ^{:dynamic true} *emr* nil)
 
 (defn emr-client [aws-creds]

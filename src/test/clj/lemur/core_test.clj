@@ -154,27 +154,28 @@
             #(.. % getHadoopJarStep getMainClass)
             #(.. % getHadoopJarStep getArgs)
             #(.. % getHadoopJarStep getProperties))
-        base-uri (:base-uri (evaluating-step cluster foo-step))]
+        base-uri (:base-uri (evaluating-step cluster foo-step))
+        runtime-jar-path "s3://aaa/bbb/jars/a.jar"]
     (is=
-      ["foo" "CANCEL_AND_WAIT" (str base-uri "/jar/a.jar") "lemur.some.classname" ["--foofoo" "1" (str base-uri "/data") "2" "3"] []]
+      ["foo" "CANCEL_AND_WAIT" runtime-jar-path "lemur.some.classname" ["--foofoo" "1" (str base-uri "/data") "2" "3"] []]
       (extract-values result1))
     (is=
-      ["bar" "CANCEL_AND_WAIT" (str base-uri "/jar/a.jar") "lemur.some.other.classname" ["--a-bool" "1"] []]
+      ["bar" "CANCEL_AND_WAIT" runtime-jar-path "lemur.some.other.classname" ["--a-bool" "1"] []]
       (extract-values result2))
     ; test boolean with false default is implicitly added to catch-args, and can be turned on
     (context-set :raw-args ["--b-bool"])
     (is=
-      ["bar" "CANCEL_AND_WAIT" (str base-uri "/jar/a.jar") "lemur.some.other.classname" ["--a-bool" "--b-bool" "1"] []]
+      ["bar" "CANCEL_AND_WAIT" runtime-jar-path "lemur.some.other.classname" ["--a-bool" "--b-bool" "1"] []]
       (extract-values (first (mk-steps cluster [bar-step]))))
     (context-set :raw-args [])
     ; test that :args.foofoo is a fn of :foofoo
     (is=
-      ["foo" "CANCEL_AND_WAIT" (str base-uri "/jar/a.jar") "lemur.some.classname" ["--foofoo" "2" (str base-uri "/data") "2" "3"] []]
+      ["foo" "CANCEL_AND_WAIT" runtime-jar-path "lemur.some.classname" ["--foofoo" "2" (str base-uri "/data") "2" "3"] []]
       (extract-values (first (mk-steps (assoc cluster :foofoo 2) [foo-step]))))
     ; test with an arg set to nil on the command line  (:foofoo should be implicitly applied to catch-args via the defstep)
     (context-set :raw-args ["--no-foofoo"])
     (is=
-      ["foo" "CANCEL_AND_WAIT" (str base-uri "/jar/a.jar") "lemur.some.classname" [(str base-uri "/data") "2" "3"] []]
+      ["foo" "CANCEL_AND_WAIT" runtime-jar-path "lemur.some.classname" [(str base-uri "/data") "2" "3"] []]
       (extract-values (first (mk-steps cluster [foo-step]))))
     (context-set :raw-args [])
     ; extra arg in step, not in original defstep-- should trigger an error

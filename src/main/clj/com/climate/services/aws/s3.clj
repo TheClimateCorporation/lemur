@@ -27,6 +27,8 @@
 ; TODO should use the TransferManager com.amazonaws.services.s3.transfer for
 ;      async transfers and better performance
 
+; TODO All functions that use this dynamic var should have an additional fn
+;      signature where the object can be passed in explicitly
 (def ^{:dynamic true} *s3* nil)
 
 (defn s3-client [creds-object]

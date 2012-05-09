@@ -122,7 +122,9 @@
        (assoc state :total-bytes-xfered (atom 0)))))
   ([progress-bar-length {:keys [total-bytes-xfered content-length]} event]
    (swap! total-bytes-xfered + (.getBytesTransfered event))
-   (print (progress-meter (/ @total-bytes-xfered content-length) progress-bar-length))))
+   (print (progress-meter
+            (if (zero? content-length) 1 (/ @total-bytes-xfered content-length))
+            progress-bar-length))))
 
 (defn upload
   "Upload the local files to S3 (or a local destination).  xfer-directives is a coll of tuples,
@@ -133,18 +135,23 @@
   under the dest prefix.  If dest does not end with /, then the files are uploaded
   (recursively) and renamed as per unix cp.  Examples, where S3WD is the
   dest-working-dir:
+
     [\"foo\" \"bar\"]  =>  S3WD/bar
     [\"foo\" \"bar/\"]  =>  S3WD/bar/foo
-    [\"foo\" \"s3://bkt/bar/\"]  =>  s3://bkt/bar/foo"
-  ([xfer-directives]
-   (upload xfer-directives nil))
-  ([xfer-directives dest-working-dir]
+    [\"foo\" \"s3://bkt/bar/\"]  =>  s3://bkt/bar/foo
+
+  For a user-friendly experience, set show-progress? to true in order to display
+  ascii progres bars indicating how much of each transfer has been completed
+  (applies only for 'local -> S3' uploads)"
+  ([show-progress? xfer-directives]
+   (upload show-progress? xfer-directives nil))
+  ([show-progress? xfer-directives dest-working-dir]
    (when (and dest-working-dir (not (s3/s3path? dest-working-dir)))
      (.mkdirs (io/file dest-working-dir)))
    (doseq [[src dest] xfer-directives]
      (let [abs-dest (mk-absolute-path dest-working-dir dest)]
-       (log/debug (format "upload %s to %s" src abs-dest))
-       (if (and (not (s3/s3path? src)) (s3/s3path? abs-dest))
+       (log/infof "upload %s to %s" src abs-dest)
+       (if (and show-progress? (not (s3/s3path? src)) (s3/s3path? abs-dest))
          (cp src abs-dest :progress-fn (partial upload-progress-fn 50))
          (cp src abs-dest))))))
 

@@ -17,6 +17,8 @@
 (defn ec2-client [aws-creds]
   (AmazonEC2Client. aws-creds))
 
+; TODO All functions that use this dynamic var should have an additional fn
+;      signature where the object can be passed in explicitly
 (defn ec2
   [creds]
   (aws ec2-client creds))

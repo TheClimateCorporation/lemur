@@ -41,7 +41,9 @@ Interestingly, the various AWS services' supporting command-line tools all have 
 
 elastic-mapreduce uses a JSON file.  CloudWatch, CloudSearch use a properties file identified by AWS_CREDENTIAL_FILE (although the key names are different in each case), and s3cmd looks for yet another properties file in ~/.s3cfg.
 
-Lemur will accept credentials in any of those formats. You can set the AWS_CREDENTIAL_FILE environment variable to a path of one of those files.  Or, it will look in either the PWD for credentials.json; or in `which elastic-mapreduce`/credentials.json.  If you want more detail, see com.climate.services.aws.common/aws-credential-discovery in this package.
+You can explicitly set the creds with Environment variables: LEMUR_AWS_ACCESS_KEY and LEMUR_AWS_SECRET_KEY.
+
+Alternatively, Lemur will accept credentials in any of the file formats above. You can set the AWS_CREDENTIAL_FILE environment variable to a path of one of those files.  Or, it will look in either the PWD for credentials.json; or in `which elastic-mapreduce`/credentials.json.  If you want more detail, see com.climate.services.aws.common/aws-credential-discovery in this package.
 
 For reference, the JSON format is:
 

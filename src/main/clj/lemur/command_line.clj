@@ -243,8 +243,7 @@
    [:slave-instance-type "Instance type for slaves" "m1.large"]
    [:num-instances "Number of instances (including the master)" "1"]
    [:ami-version (str "Which AMI to use (see RunJobFlowRequest#setAmiVersion in "
-                      "the AWS Java SDK.  ONLY USED IF --version is 6")
-                 "latest"]
+                      "the AWS Java SDK.  ONLY USED IF --version is 6") "latest"]
    [:spot-task-group
     (str "Create a task group w/ spot instances. Value is type,price,num-addl-instances. "
          "E.g. m1.xlarge,30%,300")]
@@ -264,4 +263,6 @@
          "this local jar file will be uploaded to S3.")]
    [:keypair "The Amazon keypair name."]
    [:user-packages "Any extra apt packages you want to install at startup"]
+   [:show-progress? (str "Show progress bars for uploads on STDOUT. You may want "
+                         "to disable when capturing the output to a log file.") false]
    [:comment "Arbitray text which is carried in the job metadata."]])

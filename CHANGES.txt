@@ -1,0 +1,13 @@
+CHANGES
+
+0.9.7
+
+- Add LICENSE and copyright notice
+- Fix error when uploading 0-byte file to S3
+- Add --[no-]show-progress option to enable[disable] ascii upload progress bars
+- Look for explicit aws cred in the Environment: LEMUR_AWS_ACCESS_KEY, LEMUR_AWS_SECRET_KEY
+
+0.9.6
+
+Initial
+
