@@ -46,6 +46,7 @@ DEPS_CP=$BASE/lib/*
 
 CLASSPATH=$LEMUR_CP:$DEPS_CP:$LEMUR_EXTRA_CLASSPATH
 
+# Use this log4j.properties if it exists.  Otherwise, use the one in lemur-*.jar
 if [ -f "$BASE/resources/log4j.properties" ]; then
   LEMUR_LOG_FILE="-Dlog4j.configuration=file:$BASE/resources/log4j.properties"
 fi

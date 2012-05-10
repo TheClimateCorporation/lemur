@@ -236,6 +236,10 @@
   ;   - ./foo.txt uploaded to ${data-uri}/data.txt
   ;   - /tmp/input-dir uploaded to "s3://${bucket}/foo"
 
+  ; Enable this feature, so that uploads to S3 will display an ascii progress bar during
+  ; the transfer to give you an indication of how long the upload will take.
+  ;:show-progress? true
+
   ; Additional bootstrap actions can be added by using a key of the form
   ; :bootstrap-action.N
   ; Where N is a unique integer which indicates the order in which the scripts should

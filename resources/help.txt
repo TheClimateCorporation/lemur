@@ -30,9 +30,9 @@ JOBDEF OVERVIEW
  What happens when you call fire! is dependent on the lemur "command".  I.e. on the
  command line, you enter something like
 
-   lemur run my-jobdef.clj [args]
-   or
-   lemur local my-jobdef.clj [args]
+  lemur run my-jobdef.clj [args]
+  or
+  lemur local my-jobdef.clj [args]
 
  The word right after lemur is the "command".  The run command will start the EMR cluster
  and submit your steps.  The local command will run your job on your workstation using
@@ -40,7 +40,7 @@ JOBDEF OVERVIEW
 
  A good starting point for a new job is to copy
 
-   examples/minimal-sample-jobdef.clj
+  examples/minimal-sample-jobdef.clj
 
  Then refer to examples/sample-jobdef.clj for a more exhaustive list
  of features and options with more examples and documentation.  WARNING: sample-jobdef.clj
@@ -58,18 +58,17 @@ SYNTAX
    white-space.  E.g. ["foo" "bar", "baz"] is a list of 3 strings. You can also use spaces,
    tabs and new-lines between list items.
 
-BASE
+BASES
 
- You'll see a (use-base ...) section below. The use-base specifies another file that
+ A jobdef may have a (use-base ...) section. The use-base specifies another file that
  should be included here.  The idea is that this file would set some default values and
- behavior for you.  Most of the important stuff is in lemur.base, so you
- will want to always include that one.
+ behavior for you (i.e. inherit some options and functionality).
 
 OPTIONS
 
- Many of the configuration blocks below (i.e defcluster, defstep, update-base) accept
+ Many of the configuration blocks (i.e defcluster, defstep, update-base) accept
  key/value pairs, where the key is a keyword (i.e. starts with ":").  When fire! is
- executed near the bottom of your job-def, the options from these sources are merged:
+ executed near the bottom of your jobdef, the options from these sources are merged:
 
    base          - from one or more files identified in (use-base ...)
    cluster       - from your defcluster
@@ -79,10 +78,10 @@ OPTIONS
 
  The sources at the bottom take precedence.
 
- The value for each key is evaluated at run time according to it's type.
+ The value for each key is evaluated at runtime according to it's type.
 
    * String - "foo"
-     Can contain variables which will be substituted at run time. The variables
+     Can contain variables which will be substituted at runtime. The variables
      are are enclosed in ${}.  For example
        "${app}-${runtime}"
      which would evaluate to something like "sample-2012-01-27-1200"
@@ -242,31 +241,31 @@ TEST
 
 PROFILES
 
- Profiles are a general override mechanism where a nested map of key/value
- pairs can be specified in your jobdef.  If the profile is active, then the
- entries in the nested map override settings of the same name.  Profiles can be
- created in defcluster, defstep, or the base.
+  Profiles are a general override mechanism where a nested map of key/value
+  pairs can be specified in your jobdef.  If the profile is active, then the
+  entries in the nested map override settings of the same name.  Profiles can be
+  created in defcluster, defstep, or the base.
 
- A profile can also influence which steps are run as part of (fire!).  See
- details in sample-jobdef.clj.
+  A profile can also influence which steps are run as part of (fire!).  And which
+  validations and hooks are executed. See details in examples/sample-jobdef.clj.
 
- There is one implicit profile which is activated automatically.  When running in
- local mode, the profile :local is on.
+  There is one implicit profile which is activated automatically.  When running in
+  local mode, the profile :local is on.
 
- The leading colon (:) at the front of the profile name, should be considered part
- of the name, and is required.
+  The leading colon (:) at the front of the profile name, should be considered part
+  of the name, and is required.
 
- Multiple profiles can be active at once.  For example, running a test
- in local mode. In this common case, the active profiles are
- [:local, :test]. The right-most profiles takes precedence.
+  Multiple profiles can be active at once.  For example, running a test
+  in local mode. In this common case, the active profiles are
+  [:local, :test]. The right-most profiles take precedence.
 
- Profiles can be enabled on the command line. For example, to enable the :test
- and :foo profiles (in order)
+  Profiles can be enabled on the command line. For example, to enable the :test
+  and :foo profiles (in order)
 
    lemur local :test :foo jobdef.clj ...
 
- Commonly, you would create profiles for :test values, and maybe a profile for :live
- or :deployed options.
+  Commonly, you would create profiles for :test values, and maybe a profile for :live
+  or :deployed options.
 
 HOOKS
 
