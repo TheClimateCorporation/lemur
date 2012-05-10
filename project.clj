@@ -1,4 +1,4 @@
-(defproject lemur "0.9.8-SNAPSHOT"
+(defproject lemur "0.9.8"
 
   :description "Lemur is a tool to launch hadoop jobs locally or on EMR
                 based on a configuration file, referred to as a jobdef."
@@ -8,7 +8,7 @@
   :source-path "src/main/clj"
   :test-path "src/test/clj"
 
-  :dependencies [[org.clojure/clojure "1.2.1"]
+  :dependencies [[org.clojure/clojure "1.3.0"]
                  [org.clojure/tools.logging "0.2.3"]
                  [org.clojure/data.json "0.1.2"]
 
@@ -29,12 +29,12 @@
                  [log4j/log4j "1.2.16"]
                  ]
 
-  :dev-dependencies [[robert/hooke "1.1.0"] ;for leiningen test-selectors
+  :dev-dependencies [[robert/hooke "1.1.2"] ;for leiningen test-selectors
                      [org.clojure/tools.trace "0.7.1"]
                      [midje "1.3.1"]
                      [lein-midje "1.0.8"]
                      [com.offbytwo.iclojure/iclojure "1.1.0"]
-                     [clojure-source "1.2.0"]]
+                     [clojure-source "1.3.0"]]
 
   :test-selectors {:default (fn [v] (not (or (:integration v) (:manual v))))
                    :integration :integration
