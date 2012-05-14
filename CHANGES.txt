@@ -1,5 +1,9 @@
 CHANGES
 
+0.9.9
+
+- Clj 1.3 bug in com.climate.services.aws.emr
+
 0.9.8
 
 - Upgrade to Clojure 1.3.0
