@@ -181,9 +181,9 @@
                               keep-alive false}}]
   (let [master-config (InstanceGroupConfig. "MASTER" master-type (Integer. 1))
         core-config (when (> num-instances 1)
-                      (InstanceGroupConfig. "CORE" slave-type (- num-instances 1)))
+                      (InstanceGroupConfig. "CORE" slave-type (Integer. (dec num-instances))))
         task-config (when spot-task-num
-                      (doto (InstanceGroupConfig. "TASK" spot-task-type spot-task-num)
+                      (doto (InstanceGroupConfig. "TASK" spot-task-type (Integer. spot-task-num))
                         (.setBidPrice (str spot-task-bid))
                         (.setMarket "SPOT")))
         jf (doto (JobFlowInstancesConfig.)
