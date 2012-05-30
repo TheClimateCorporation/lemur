@@ -32,6 +32,7 @@
   lemur <command> [profiles*] <jobdef-file> [options] [remaining]
 
   lemur help                      - Display an overview and help about the jobdef file
+  lemur version                   - Display the verision number
   lemur run jobdef.clj            - Run a job on EMR
   lemur dry-run jobdef.clj        - Dry-run, i.e. just print out what would be done
   lemur start jobdef.clj          - Start an EMR cluster, but don't run the steps (jobs)
@@ -241,6 +242,7 @@
    [:enable-debugging? "Enable job flow debugging (results viewable in AWS Console)" true]
    [:master-instance-type "Instance type for master" "m1.large"]
    [:slave-instance-type "Instance type for slaves" "m1.large"]
+   [:availability-zone "Amazon availabilty zone" nil]
    [:num-instances "Number of instances (including the master)" "1"]
    [:ami-version (str "Which AMI to use (see RunJobFlowRequest#setAmiVersion in "
                       "the AWS Java SDK.  ONLY USED IF --version is 6") "latest"]

@@ -24,6 +24,8 @@ JAVA=$JAVA_HOME/bin/java
 BASEDIR=`dirname $0`
 BASE=`cd $BASEDIR/..; pwd -P`
 
+export LEMUR_VERSION=`grep defproject $BASE/project.clj | sed -e 's/.*\"\(.*\)\".*/\1/'`
+
 # Look along-side this lemur executable for the AWS credentials
 if [ -z "$AWS_CREDENTIAL_FILE" -a -f "$BASEDIR/credentials.json" ]; then
   export AWS_CREDENTIAL_FILE="$BASEDIR/credentials.json"
@@ -39,7 +41,7 @@ fi
 if [ -f $BASE/lemur-*.jar ]; then
   LEMUR_CP=`echo $BASE/lemur-*.jar`
 else
-  LEMUR_CP=$BASE/src/main/clj:$BASE/classes
+  LEMUR_CP=$BASE/src/main/clj:$BASE/classes:$BASE/resources
 fi
 
 DEPS_CP=$BASE/lib/*
