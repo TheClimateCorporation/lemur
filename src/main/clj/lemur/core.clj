@@ -547,6 +547,7 @@ calls launch              - take action (upload files, start cluster, etc)
           jobflow-options
             {:bootstrap-actions (map second ba-vector)
              :log-uri (:log-uri evaluating-opts)
+             :availability-zone (:availability-zone evaluating-opts)
              :master-type (:master-instance-type evaluating-opts)
              :slave-type (:slave-instance-type evaluating-opts)
              :num-instances (util/as-int (:num-instances evaluating-opts))
@@ -897,6 +898,8 @@ calls launch              - take action (upload files, start cluster, etc)
           (display-types)
         "spot-price-history"
           (spot-price-history)
+        "version"
+          (quit :msg (str "Lemur " (System/getenv "LEMUR_VERSION")))
         "formatted-help"
           (execute-jobdef jobdef-path)
         "help"
