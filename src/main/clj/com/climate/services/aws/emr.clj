@@ -172,6 +172,10 @@
           (log/error "Job failed. Jobflow id or step not found.")
           2)))))
 
+(defn instance-group-config
+  [group instance-type number]
+  (InstanceGroupConfig. group instance-type (Integer. number)))
+
 (defn instances-config [{:keys [master-type slave-type num-instances keypair keep-alive
                                 availability-zone spot-task-type spot-task-bid
                                 spot-task-num]
@@ -179,11 +183,11 @@
                               slave-type "m1.large"
                               num-instances 3
                               keep-alive false}}]
-  (let [master-config (InstanceGroupConfig. "MASTER" master-type 1)
+  (let [master-config (instance-group-config "MASTER" master-type 1)
         core-config (when (> num-instances 1)
-                      (InstanceGroupConfig. "CORE" slave-type (- num-instances 1)))
+                      (instance-group-config "CORE" slave-type (- num-instances 1)))
         task-config (when spot-task-num
-                      (doto (InstanceGroupConfig. "TASK" spot-task-type spot-task-num)
+                      (doto (instance-group-config "TASK" spot-task-type spot-task-num)
                         (.setBidPrice (str spot-task-bid))
                         (.setMarket "SPOT")))
         jf (doto (JobFlowInstancesConfig.)
