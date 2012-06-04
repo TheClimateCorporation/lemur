@@ -1,9 +1,12 @@
-(defproject lemur "1.0.0"
+(defproject lemur "1.0.1"
 
   :description "Lemur is a tool to launch hadoop jobs locally or on EMR
                 based on a configuration file, referred to as a jobdef."
 
-  :jvm-opts ["-Dlog4j.configuration=file:resources/log4j.properties"]
+  :jvm-opts
+    ~(if (.exists (java.io.File. "resources/log4j.properties"))
+       ["-Dlog4j.configuration=file:resources/log4j.properties"]
+       [])
 
   :source-path "src/main/clj"
   :test-path "src/test/clj"
