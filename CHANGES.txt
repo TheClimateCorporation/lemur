@@ -1,5 +1,10 @@
 CHANGES
 
+1.0.1
+
+- fix clj1.3 regression for InstanceGroupConfig in emr.clj
+- avoid non-fatal FileNotFound error for lein compile when log4j.properties is not available
+
 1.0.0
 
 - Added lein version command
