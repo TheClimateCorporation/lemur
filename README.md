@@ -54,7 +54,8 @@ For reference, the JSON format is:
 ### Compatibility
 
 v0.9.7 Clojure 1.2
-v0.9.8 Clojure 1.3 (although I haven't done extensive testing with 1.3 yet)
+
+v1.0.1+ Clojure 1.3 
 
 I've used lemur on Mac OS X and Linux.  It MAY work on Windows (if you use cygwin).  If you try it on Windows, I would be interested in hearing about your experience (patches welcome).
 
@@ -81,6 +82,7 @@ lemur start clj/wb-clj/src/weatherbill/lemur/sample-jobdef.clj
 
 - Checkout the wiki on github: https://github.com/TheClimateCorporation/lemur/wiki
 - Look at examples/sample-jobdef.clj for details on all options that you can use in your jobdef
+- Open Issues via GitHub
 - You can ask questions on TBD (mslimotte @ gmail dot com, for now)
 
 Feedback and feature requests are welcome!
