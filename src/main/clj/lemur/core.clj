@@ -704,6 +704,9 @@ calls launch              - take action (upload files, start cluster, etc)
 
 (defn- execute-jobdef
   [file]
+  (when-not file
+    (quit :msg "No jobdef file was supplied" :exit-code 1
+          :cmdspec (context-get :command-spec)))
   (let [job-ns (gensym (-> file ccio/basename (s/replace #"\.clj$" "")))]
     (log/debug (str "Jobdef namespace " job-ns))
     (binding [*ns* (create-ns job-ns)]
@@ -724,9 +727,6 @@ calls launch              - take action (upload files, start cluster, etc)
       (use-base 'lemur.base)
       ; load the job file here... it is up to the job file to call fire! with
       ; the appropriate cluster and step(s)
-      (when-not file
-        (quit :msg "No jobdef file was supplied" :exit-code 1
-              :cmdspec (context-get :command-spec)))
       (log/info (str "Loading jobdef " file))
       (load-file file))))
 
