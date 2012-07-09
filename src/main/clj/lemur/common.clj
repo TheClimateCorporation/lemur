@@ -208,6 +208,7 @@
     cat, sort, diff
   Returns the result of sh/sh, which is a map."
   [left right]
+  (printf "Comparing sorted part files of %s to %s%n" left right)
   (let [[leftf rightf]
         (for [path [left right]]
           (let [file (File/createTempFile "diff-parts-" nil)
@@ -248,8 +249,6 @@
   with your system's sort and diff utilities."
   [& tests]
   (fn [eopts _]
-    (printf "Comparing expected (%s/expected) to results (%s)%n"
-            (:test-uri eopts) (:data-uri eopts))
     (doseq [[name path] tests]
       (quit-on-failure
         (diff-parts
