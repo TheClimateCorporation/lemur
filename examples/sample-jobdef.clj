@@ -325,15 +325,14 @@
 
   )
 
-;;; Fire! (i.e. start the cluster and, optionally, run the steps)
+;;; Fire! (i.e. start the cluster and run the steps)
 
 ; fire! returns right away. The jobflow-id is saved (context-get :jobflow-id).
 ; (fire! cluster steps)
-; steps is a list (in-line or collection) of steps to always run, followed by
-; zero or more pairs of :profile step.  Where the latter is only executed if the
-; :profile is active.  :profile can be followed by 1 step or a collection of
-; steps.
-(fire! sample-cluster sample-step :test [eval-step])
+; steps is a list (in-line or collection) of steps to run.  OR steps is a "fn of eopts",
+; which returns a step or collection of steps.
+; cluster is either a defcluster, or a fn that returns a single defcluster
+(fire! sample-cluster sample-step)
 
 ; If you want to block on cluster startup, where <stage> is one of
 ;  :provisioned
