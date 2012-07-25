@@ -668,26 +668,23 @@ calls launch              - take action (upload files, start cluster, etc)
            flatten)))
 
 (defn fire!
-  "([cluster always-on-step* (profile steps)*])
+  "Based on the command, take action using the given cluster and steps.
 
-  Based on the command, take action using the given cluster and steps. Some steps
-  will always be used, others are only used for the specified profile.
+  [(cluster|cluster-fn) (steps*|step-fn)]
 
-  - always-on-step is a defstep (or StepConfig object) that is always included.
-  - profile is a profile name, like :test.
-  - steps (following a profile name) is a defstep, a StepConfig or collection
-    of the same.
+  The first arg is a cluster (created by defcluster) or a 'fn of eopts' that returns a cluster.
 
-  In the latter case, those steps will only be processed if the correspondig
-  profile is active.
+  Scond arg is one or more steps, either as a collection or a variable length
+  argument list.  Alternatively, you can provide a single 'fn of eopts' which returns
+  a step or collection of steps. Each step is a defstep or a StepConfig.
 
   Examples:
 
-    (fire! my-cluster a-step b-step :test [validation1-step validation2-step])
-    (fire! my-cluster :my-profile [a-step b-step] :local c-step)
+    (fire! my-cluster a-step b-step)
+    (fire! my-cluster step-selector-fn)
 
   Returns the metajob, which is a YAML string with all the details for the launch"
-  [cluster & profile-steps]
+  [cluster-arg & profile-steps]
   (process-args-if-needed)
   (when (local?)
     (add-profiles :local))
@@ -700,7 +697,15 @@ calls launch              - take action (upload files, start cluster, etc)
         (println (formatted-help (context-get :command-spec)))
         (quit :exit-code 0))
     :default
-      (fire* (context-get :command) cluster (steps-for-active-profiles profile-steps))))
+      (let [cluster (if (fn? cluster-arg)
+                      (cluster-arg (evaluating-map (full-options)))
+                      cluster-arg)
+            steps
+              (if (fn? (first profile-steps))
+                ((first profile-steps) (evaluating-map (full-options cluster)))
+                ; profile steps usage is deprecated -- it was overly complicated, use a fn instead
+                (steps-for-active-profiles profile-steps))]
+        (fire* (context-get :command) cluster steps))))
 
 (defn- execute-jobdef
   [file]

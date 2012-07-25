@@ -1,5 +1,12 @@
 CHANGES
 
+1.1.0
+
+- fire! accepts a "fn of eopts" which returns the cluster
+- fire! accepts a "fn of eopts" for steps, which returns the list of Steps
+- Error check for no jobdef
+- Better diagnostic messages for diff-test-data
+
 1.0.1
 
 - fix clj1.3 regression for InstanceGroupConfig in emr.clj
