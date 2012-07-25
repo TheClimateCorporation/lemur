@@ -670,11 +670,11 @@ calls launch              - take action (upload files, start cluster, etc)
 (defn fire!
   "Based on the command, take action using the given cluster and steps.
 
-  [cluster steps*]
-  or
-  [cluster steps-fn]
+  [(cluster|cluster-fn) (steps*|step-fn)]
 
-  You can provide one or more steps, either as a collection or a variable length
+  The first arg is a cluster (created by defcluster) or a 'fn of eopts' that returns a cluster.
+
+  Scond arg is one or more steps, either as a collection or a variable length
   argument list.  Alternatively, you can provide a single 'fn of eopts' which returns
   a step or collection of steps. Each step is a defstep or a StepConfig.
 
