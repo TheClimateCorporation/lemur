@@ -30,11 +30,46 @@
     script-name
     (format "s3://%s/%s/%s" (:bucket eopts) (:std-scripts-prefix eopts) script-name)))
 
-(defn mk-hadoop-config
-  "Assemble the hadoop config arguments from all keys in the opts that start with
-  hadoop-config."
+(defn- mk-config
+  "Return a function which assembles the config arguments from all keys in the
+  opts that start with 'x-config'"
+  [x]
+  (fn [eopts]
+    (mapcat second (re-find-map-entries
+                    (re-pattern (str "^" x "-config\\.(\\w+)"))
+                    eopts))))
+
+(def
+  ^{:doc "Assemble the hadoop config arguments from all keys in the opts that start
+with hadoop-config."
+    :private true
+    :arglists '([eopts])}
+  mk-hadoop-config
+  (mk-config "hadoop"))
+
+(def
+  ^{:doc "Assemble the hadoop config arguments from all keys in the opts that start
+with hadoop-config."
+    :private true
+    :arglists '([eopts])}
+  mk-hbase-config
+  (mk-config "hbase"))
+
+(defn configure-hadoop
+  "Add support for inline 'configure-hadoop' keys in defcluster."
   [eopts]
-  (mapcat second (re-find-map-entries #"^hadoop-config\.(\w+)" eopts)))
+  (when-let [hc (seq (mk-hadoop-config eopts))]
+    ["Hadoop Config"
+     "s3://elasticmapreduce/bootstrap-actions/configure-hadoop"
+     hc]))
+
+(defn configure-hbase
+  "Add support for inline 'configure-hbase' keys in defcluster."
+  [eopts]
+  (when-let [hc (seq (mk-hbase-config eopts))]
+    ["HBase Config"
+     "s3://elasticmapreduce/bootstrap-actions/configure-hbase"
+     hc]))
 
 (defn- mk-bootstrap-action
   "Creates a BootstrapActionConfig instance from the arguments. name is a descriptive string,

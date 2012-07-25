@@ -17,7 +17,7 @@
     lemur.core
     [lemur.common :only [val-opts]]
     [com.climate.services.aws.common :only [aws-credential-discovery]]
-    [lemur.bootstrap-actions :only [mk-hadoop-config]])
+    [lemur.bootstrap-actions :only [configure-hadoop]])
   (:require
     [clojure.tools.logging :as log]
     [lemur.util :as util]
@@ -77,11 +77,5 @@
     :data-uri "${base-uri}/data"
     :jar-uri "${base-uri}/jar"
 
-    :bootstrap-action.100
-      (fn [eopts]
-        (when-let [hc (seq (mk-hadoop-config eopts))]
-          ["Hadoop Config"
-           "s3://elasticmapreduce/bootstrap-actions/configure-hadoop"
-           hc]))
-
+    :bootstrap-action.100 configure-hadoop
     ))
