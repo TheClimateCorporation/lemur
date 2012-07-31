@@ -83,6 +83,6 @@ lemur start clj/wb-clj/src/weatherbill/lemur/sample-jobdef.clj
 - Checkout the wiki on github: https://github.com/TheClimateCorporation/lemur/wiki
 - Look at examples/sample-jobdef.clj for details on all options that you can use in your jobdef
 - Open Issues via GitHub
-- You can ask questions on TBD (mslimotte @ gmail dot com, for now)
+- You can ask questions at the <a href="https://groups.google.com/forum/#!forum/lemur-user">Google Group</a>
 
 Feedback and feature requests are welcome!
