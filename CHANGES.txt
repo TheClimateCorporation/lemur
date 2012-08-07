@@ -1,5 +1,10 @@
 CHANGES
 
+1.1.1
+
+ - Bugfix: :ami-version default should only be set in base.clj, not the command line defaults,
+   otherwise it is not overridable in a probject specifc base file.
+
 1.1.0
 
 - fire! accepts a "fn of eopts" which returns the cluster
