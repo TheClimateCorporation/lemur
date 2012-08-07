@@ -244,8 +244,8 @@
    [:slave-instance-type "Instance type for slaves" "m1.large"]
    [:availability-zone "Amazon availabilty zone" nil]
    [:num-instances "Number of instances (including the master)" "1"]
-   [:ami-version (str "Which AMI to use (see RunJobFlowRequest#setAmiVersion in "
-                      "the AWS Java SDK.  ONLY USED IF --version is 6") "latest"]
+   [:ami-version
+    "Which AMI to use (see RunJobFlowRequest#setAmiVersion in the AWS Java SDK)"]
    [:spot-task-group
     (str "Create a task group w/ spot instances. Value is type,price,num-addl-instances. "
          "E.g. m1.xlarge,30%,300")]
