@@ -31,6 +31,7 @@ Lemur does not try to replace elastic-mapreduce.  While there is some overlap, l
 
 1. Download the tar-gzip from the GitHub Downloads link
 1. Expand into some install location
+1. Run `ant` in the expanded path to generate a jar
 1. set LEMUR_HOME to the top of the install path
 1. set LEMUR_EXTRA_CLASSPATH to any classpath entries (colon separated) that you want lemur to include when it runs your jobdef. The classpath that includes you base files, or other functions or libraries for use by your jobdefs for example.
 1. [optional] set AWS_CREDENTIAL_FILE to a file with AWS credentials (see AWS Credentials below).
