@@ -279,13 +279,19 @@
 ; s3 to s3 copy
 (defmethod cp [true true]
   [src dest & _]
-  (let [dest (if (slash$? dest) (str dest (ccio/basename src)) dest)
+  (let [dest (if (and (not (slash$? src)) (slash$? dest)) (str dest (ccio/basename src)) dest)
         [sbkt skey] (parse-s3path src)
         [dbkt dkey] (parse-s3path dest)]
-    (when-not (object? sbkt skey)
-      (throw (UnsupportedOperationException.
-               "cp within s3 only works for a single s3 object at this time, not a directory.")))
-    (copy-object sbkt skey dbkt dkey)))
+    (if-not (object? sbkt skey)
+      ; If src is a directory, then recursively copy to dest
+      (let [lst (objects sbkt skey nil)
+            f (fn [key skey dkey] (s/replace-first key (slash!$ skey) (slash!$ dkey)))]
+        (->> lst
+          second
+          (map (memfn getKey))
+          (map #(copy-object sbkt % dbkt (f % skey dkey)))
+          doall))
+      (copy-object sbkt skey dbkt dkey))))
 
 (defn- new-s3-dest
   "Used by cp (for the s3 -> local case).  Determines the new path name, and
