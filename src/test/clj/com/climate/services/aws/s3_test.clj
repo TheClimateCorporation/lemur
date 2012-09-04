@@ -173,4 +173,15 @@
           (cp (s3p "foo/bar.txt") (s3p "/"))
           ; same dest as prev, should overwrite, no error:
           (cp (s3p "foo/bar.txt") (s3p ""))
-          (is (object? test-bucket "bar.txt")))))))
+          (is (object? test-bucket "bar.txt"))
+          ; create a nested dir to test dir/dir copying
+          ; foo/baz/bar.txt
+          (cp (s3p "foo/bar.txt") (s3p "foo/baz/"))
+          (cp (s3p "foo/") (s3p "dest/"))
+          (is (object? test-bucket "dest/baz/bar.txt"))
+          (cp (s3p "foo") (s3p "dest1/"))
+          (is (object? test-bucket "dest1/foo/baz/bar.txt"))
+          (cp (s3p "foo/") (s3p "dest2"))
+          (is (object? test-bucket "dest2/baz/bar.txt"))
+          (cp (s3p "foo") (s3p "dest3"))
+          (is (object? test-bucket "dest3/baz/bar.txt")))))))
