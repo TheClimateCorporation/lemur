@@ -29,10 +29,11 @@
          (ba-script-path fopts "s3://foo/myscript.sh"))))
 
 (deftest test-mk-hadoop-config
-  (is= ["-m" "aaa=bbb" "-h" "ccc=ddd" "-m" "foo=bar" "-h" "boo=baz"]
-       (mk-hadoop-config
-         {:hadoop-config.b ["-m" "foo=bar" "-h" "boo=baz"]
-          :hadoop-config.a ["-m" "aaa=bbb" "-h" "ccc=ddd"]})))
+  (let [mk-hadoop-config (ns-resolve 'lemur.bootstrap-actions 'mk-hadoop-config)]
+    (is= ["-m" "aaa=bbb" "-h" "ccc=ddd" "-m" "foo=bar" "-h" "boo=baz"]
+         (mk-hadoop-config
+           {:hadoop-config.b ["-m" "foo=bar" "-h" "boo=baz"]
+            :hadoop-config.a ["-m" "aaa=bbb" "-h" "ccc=ddd"]}))))
 
 (defn- validate-bac
   "Compare the BootstrapActionConfig object to a vector of expected values."

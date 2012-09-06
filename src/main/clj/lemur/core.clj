@@ -15,7 +15,7 @@
 (ns lemur.core
   (:use
     lemur.command-line
-    [lemur.evaluating-map :only [evaluating-map]]
+    [lemur.evaluating-map :only [evaluating-map eoval] :rename {eoval em-eoval}]
     [lemur.bootstrap-actions :only [mk-bootstrap-actions
                                     hadoop-config-details
                                     bootstrap-actions-details]]
@@ -106,6 +106,8 @@ calls launch              - take action (upload files, start cluster, etc)
 (defcommand start?)
 (defcommand help?)
 (defcommand formatted-help?)
+
+(util/defalias eoval em-eoval)
 
 (defn profile?
   "Test if the profile x is in use."
@@ -337,6 +339,7 @@ calls launch              - take action (upload files, start cluster, etc)
             (nil? val) nil
             (true? val) opt-name
             (false? val) nil
+            (= "nil" val) nil
             (and (string? val) (empty? val)) nil
             :default [opt-name val]))))
     flatten
@@ -556,7 +559,9 @@ calls launch              - take action (upload files, start cluster, etc)
              :spot-task-num spot-task-num
              :keep-alive (or (:keep-alive? evaluating-opts) (start?))
              :keypair (:keypair evaluating-opts)
-             :ami-version (:ami-version evaluating-opts)}
+             :ami-version (:ami-version evaluating-opts)
+             :hadoop-version (:hadoop-version evaluating-opts)
+             :supported-products (:supported-products evaluating-opts)}
           steps
             (if (:enable-debugging? evaluating-opts)
               (cons (emr/debug-step-config) steps)
@@ -776,6 +781,23 @@ calls launch              - take action (upload files, start cluster, etc)
         :jobdef-file (util/shortname *file*)
         :cluster-name ~cluster-name))))
 
+(defn- matching-eoval-expr?
+  [k v]
+  (let [v-meta (meta v)]
+    (and (:eoval v-meta) (= (:key v-meta) k))))
+
+(defn- get-opt-key
+  "Get the name of the key. The name is suffixed with ? in the boolean case, i.e. either:
+   a) value is a Boolean (true or false)
+   b) value is an eoval expression of the same name as k with ? suffix."
+  [k v]
+  (let [arg-suffix (-> k name (subs 5))
+        arg-suffix-bool (str arg-suffix "?")]
+    (keyword (if (or (instance? Boolean v)
+                     (matching-eoval-expr? (keyword arg-suffix-bool) v))
+               arg-suffix-bool
+               arg-suffix))))
+
 (defmacro defstep
   "Creates a map, which represents a single EMR step"
   [name-sym & bindings]
@@ -788,15 +810,20 @@ calls launch              - take action (upload files, start cluster, etc)
             (reduce
               (fn [sm arg-key]
                 (let [orig-val (eval (get sm arg-key))
-                      opt-key (if (instance? Boolean orig-val)
-                                (-> arg-key name (subs 5) (str "?") keyword)
-                                (-> arg-key name (subs 5) keyword))]
-                  ; Create implicit command line args, if they don't already exist
+                      opt-key (get-opt-key arg-key orig-val)]
+                  ; test if this arg is explicit (i.e. appears in catch-args)
                   (if (->> (context-get :command-spec) (map first) (filter #(= opt-key %)) seq)
-                    sm
-                    (do (catch-args [opt-key (name opt-key) orig-val])
-                        ; adjust the values in the step map, to be fn's of their opt-key's
-                        (assoc sm arg-key (fn [eopts] (get eopts opt-key)))))))
+                      sm
+                    ; if not explicit, create implicit command line arg
+                    (let [opt-name (name opt-key)]
+                      (catch-args [opt-key
+                                   opt-name
+                                   (cond
+                                     (= orig-val (str "${" opt-name "}"))  nil
+                                     (matching-eoval-expr? opt-key orig-val) nil
+                                     :else orig-val)])
+                      ; adjust the values in the step map, to be fn's of their opt-key's
+                      (assoc sm arg-key (fn [eopts] (get eopts opt-key)))))))
               (apply hash-map bindings)
               (remove #(some #{%} [:args.data-uri :args.positional :args.passthrough]) args-order)))]
     ; warn if args.* contains entries that end with '?'
