@@ -1,9 +1,46 @@
 CHANGES
 
+1.2.0
+
+- s3/cp now supports S3 directory to S3 directory copies
+
+- Support in defcluster for two Amazon features
+  - set the hadoop-version with :hadoop-version which takes a string like "0.20.205"
+  - set supported-products with :supported-products, e.g.
+    (defcluster ...
+      :supported-products ["karmasphere-enterprise-utility"])
+
+- In defstep, a value of "nil" should be converted to nil.  This captures the common case
+  of :args.foo "${foo}" when :foo is unset.
+
+- New helper function lemur.core/eoval - use this in your defstep args to get the value
+  of an option.
+  E.g. (defstep ...
+          :args.foo (eoval foo))
+  This is better than "${foo}" in that it will return the value of :foo without converting
+  it into a string.  This is most important for Boolean values, i.e. you want the value true,
+  not the string "true".
+
+- Catch this common error and handle it as most people would expect:
+  (defstep ...
+    :args.foo "${foo}")
+  With no entry in (catch-args).  Previously this resulted in a stackoverflow, as it repeatedly
+  repeatedly called itself to get the value of "${foo}".  Now, the (catch-args) entry is
+  created implicitly with a default of nil.
+
+- bugfix: When there is an explicit catch-args for a boolean option:
+    E.g. (catch-args [:foo? "some help"] false)
+  defstep would not recognize it, and would instead create a new option, non-boolean option :foo.
+  Now, you can create boolean options like this, which work with the catch-args example above:
+  (defstep ...
+    :args.foo (eoval :foo?))
+
+- fix bootstrap-actions-test/mk-hadoop-config unit test
+
 1.1.1
 
- - Bugfix: :ami-version default should only be set in base.clj, not the command line defaults,
-   otherwise it is not overridable in a project specific base file.
+- Bugfix: :ami-version default should only be set in base.clj, not the command line defaults,
+  otherwise it is not over-ridable in a project specific base file.
 
 1.1.0
 

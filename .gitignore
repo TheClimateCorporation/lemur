@@ -7,3 +7,5 @@
 /checkouts
 /.lein-deps-sum
 /tmp
+/.idea
+/lemur.iml

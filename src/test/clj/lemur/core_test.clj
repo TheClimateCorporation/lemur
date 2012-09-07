@@ -34,6 +34,9 @@
 
 (context-set :command "dry-run")
 
+(catch-args
+  [:explicit-bool-test? "a boolean option" false])
+
 (defcluster lemon-cluster
   :bucket "lemon-bkt"
   :keypair "tcc-key"
@@ -44,6 +47,9 @@
 (defstep foo-step
   :main-class "lemur.some.classname"
   :x "3"
+  :args.extra1 "${extra1}"     ; self-referential, but implicit args should catch this case and make the default nil
+  :args.extra2 (eoval :extra2) ; self-referential, but implicit args should catch this case and make the default nil
+  :args.extra3 "nil"           ; should equate to nil, and therefore be ignored
   :args.foofoo "1"
   :args.should-be-ignored nil
   :args.data-uri true
@@ -53,6 +59,8 @@
   :main-class "lemur.some.other.classname"
   :args.a-bool true
   :args.b-bool false
+  :args.bool-test (eoval :bool-test?)
+  :args.explicit-bool-test (eoval :explicit-bool-test?)
   :args.data-uri false
   :args.positional ["1"])
 
@@ -163,9 +171,10 @@
       ["bar" "CANCEL_AND_WAIT" runtime-jar-path "lemur.some.other.classname" ["--a-bool" "1"] []]
       (extract-values result2))
     ; test boolean with false default is implicitly added to catch-args, and can be turned on
-    (context-set :raw-args ["--b-bool"])
+    (context-set :raw-args ["--b-bool" "--bool-test" "--explicit-bool-test"])
     (is=
-      ["bar" "CANCEL_AND_WAIT" runtime-jar-path "lemur.some.other.classname" ["--a-bool" "--b-bool" "1"] []]
+      ["bar" "CANCEL_AND_WAIT" runtime-jar-path "lemur.some.other.classname"
+       ["--a-bool" "--b-bool" "--bool-test" "--explicit-bool-test" "1"] []]
       (extract-values (first (mk-steps cluster [bar-step]))))
     (context-set :raw-args [])
     ; test that :args.foofoo is a fn of :foofoo

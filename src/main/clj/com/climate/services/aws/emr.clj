@@ -178,7 +178,7 @@
 
 (defn instances-config [{:keys [master-type slave-type num-instances keypair keep-alive
                                 availability-zone spot-task-type spot-task-bid
-                                spot-task-num]
+                                spot-task-num hadoop-version]
                          :or {master-type "m1.large"
                               slave-type "m1.large"
                               num-instances 3
@@ -194,6 +194,8 @@
              (.setKeepJobFlowAliveWhenNoSteps keep-alive)
              (.setInstanceGroups (filter identity [master-config core-config task-config]))
              (.setEc2KeyName keypair))]
+    (when hadoop-version
+      (.setHadoopVersion jf hadoop-version))
     (when availability-zone
       (.setPlacement jf (PlacementType. availability-zone)))
     jf))
@@ -245,8 +247,8 @@
   [jobflow-id steps]
   (AddJobFlowStepsRequest. jobflow-id steps))
 
-(defn start-job-flow [name steps {:keys [log-uri bootstrap-actions ami-version]
-                                  :or {bootstrap-actions []}
+(defn start-job-flow [name steps {:keys [log-uri bootstrap-actions ami-version supported-products]
+                                  :or {bootstrap-actions [] supported-products []}
                                   :as all}]
   (log/info (str "Starting JobFlow " all))
   (let [instances (instances-config all)
@@ -255,6 +257,7 @@
                       (.setLogUri log-uri) ;can be nil (i.e. no logs)
                       (.setInstances instances)
                       (.setAmiVersion ami-version)
+                      (.setSupportedProducts supported-products)
                       (.setBootstrapActions bootstrap-actions)
                       (.setSteps steps))]
     (.getJobFlowId (.runJobFlow *emr* request))))
