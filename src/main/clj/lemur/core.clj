@@ -15,13 +15,13 @@
 (ns lemur.core
   (:use
     lemur.command-line
-    [lemur.evaluating-map :only [evaluating-map eoval] :rename {eoval em-eoval}]
     [lemur.bootstrap-actions :only [mk-bootstrap-actions
                                     hadoop-config-details
                                     bootstrap-actions-details]]
     [clojure.pprint :only [cl-format]])
   (:require
     clojure.set
+    [lemur.evaluating-map]
     [com.climate.shell :as sh]
     [com.climate.io :as ccio]
     [clojure.java.io :as io]
@@ -107,7 +107,7 @@ calls launch              - take action (upload files, start cluster, etc)
 (defcommand help?)
 (defcommand formatted-help?)
 
-(util/defalias eoval em-eoval)
+(util/defalias eoval lemur.evaluating-map/eoval)
 
 (defn profile?
   "Test if the profile x is in use."
@@ -265,7 +265,7 @@ calls launch              - take action (upload files, start cluster, etc)
   ([cluster step]
    (evaluating-step nil cluster step))
   ([base cluster step]
-   (evaluating-map (full-options base cluster (if-not (instance? StepConfig step) step)))))
+   (lemur.evaluating-map/evaluating-map (full-options base cluster (if-not (instance? StepConfig step) step)))))
 
 ; Using a distinct name for this function (as opposed to use)
 ; is good for calling out the intention when used in a job-def.
@@ -370,7 +370,7 @@ calls launch              - take action (upload files, start cluster, etc)
 
 (defn- save-metajob
   [cluster steps metajob]
-  (let [eopts (evaluating-map (full-options cluster) steps)]
+  (let [eopts (lemur.evaluating-map/evaluating-map (full-options cluster) steps)]
     (when (:metajob-file eopts)
       ; TODO create a temp file here, and use ccio/cp
       (if (s3/s3path? (:base-uri eopts))
@@ -532,7 +532,7 @@ calls launch              - take action (upload files, start cluster, etc)
 
 (defn- fire*
   [command cluster steps]
-  (let [evaluating-opts (evaluating-map (full-options cluster) steps)
+  (let [evaluating-opts (lemur.evaluating-map/evaluating-map (full-options cluster) steps)
         ;When (dry-run?), validate won't exit immediately, so save the results to output at the end
         validation-result (validate
                             (context-get :validators)
@@ -639,7 +639,7 @@ calls launch              - take action (upload files, start cluster, etc)
       ;;; trigger hooks and launch
 
       ; hooks w/ arity 1 are called pre-launch, those w/ arity 2 are called post-launch
-      (let [eopts-with-mj (evaluating-map (assoc (full-options cluster) :lemur-metajob metajob) steps)
+      (let [eopts-with-mj (lemur.evaluating-map/evaluating-map (assoc (full-options cluster) :lemur-metajob metajob) steps)
             ;pre-hooks
             hook-precall-results
               (doall (for [f (context-get :hooks)]
@@ -703,11 +703,11 @@ calls launch              - take action (upload files, start cluster, etc)
         (quit :exit-code 0))
     :default
       (let [cluster (if (fn? cluster-arg)
-                      (cluster-arg (evaluating-map (full-options)))
+                      (cluster-arg (lemur.evaluating-map/evaluating-map (full-options)))
                       cluster-arg)
             steps
               (if (fn? (first profile-steps))
-                ((first profile-steps) (evaluating-map (full-options cluster)))
+                ((first profile-steps) (lemur.evaluating-map/evaluating-map (full-options cluster)))
                 ; profile steps usage is deprecated -- it was overly complicated, use a fn instead
                 (steps-for-active-profiles profile-steps))]
         (fire* (context-get :command) cluster steps))))
@@ -784,7 +784,7 @@ calls launch              - take action (upload files, start cluster, etc)
 (defn- matching-eoval-expr?
   [k v]
   (let [v-meta (meta v)]
-    (and (:eoval v-meta) (= (:key v-meta) k))))
+    (and (:lemur.evaluating-map/eoval v-meta) (= (:lemur.evaluating-map/key v-meta) k))))
 
 (defn- get-opt-key
   "Get the name of the key. The name is suffixed with ? in the boolean case, i.e. either:
@@ -867,7 +867,7 @@ calls launch              - take action (upload files, start cluster, etc)
   the add-hooks functionality over this method.  This method may become deprecated
   in the future."
   [[cluster step] [eopts-sym] & body]
-  `(let [~eopts-sym (evaluating-map (full-options ~cluster ~step))]
+  `(let [~eopts-sym (lemur.evaluating-map/evaluating-map (full-options ~cluster ~step))]
      ~@body))
 
 (defn- display-types
