@@ -22,6 +22,12 @@
 
 (def ENV (System/getenv))
 
+(defn eoval
+  [key]
+  (with-meta
+    (fn [eopts] (eopts key))
+    {::eoval true ::key key}))
+
 (defn str-interpolate
   "Replace 'variables' in s with the correspondig map value from value-map. Variables
   are encoded into the string inside ${}, for example
@@ -57,6 +63,7 @@
       (fn? x)
         ; If there are circular dependencies, it will eventually throw a StackOverflowError
         (let [result (cond
+                       (::eoval (meta x)) (x emap)
                        (util/has-arity? x 0) (x)
                        (util/has-arity? x 1) (x emap))]
           (evaluate {key result} key emap unused-steps))
