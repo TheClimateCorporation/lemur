@@ -50,8 +50,8 @@
                                 " => " props)
                      ; AWSSecretKey/AWSAccessKeyId -- this is the format used by AWS CloudWatch
                      ; access_key/secret_key -- this format is for the s3cmd .s3cfg file
-                     {:access_id (or (get props "accessKey") (get props "AWSSecretKey") (get props "access_key"))
-                      :private_key (or (get props "secretKey") (get props "AWSAccessKeyId") (get props "secret_key"))
+                     {:access_id (or (get props "accessKey") (get props "AWSAccessKeyId") (get props "access_key"))
+                      :private_key (or (get props "secretKey") (get props "AWSSecretKey") (get props "secret_key"))
                       :keypair (get props "keypair")})))]
     (when result (log/debug "Loaded aws-credentials" result))
     result))
