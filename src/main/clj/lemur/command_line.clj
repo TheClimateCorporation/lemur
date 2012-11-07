@@ -243,6 +243,7 @@
    [:master-instance-type "Instance type for master" "m1.large"]
    [:slave-instance-type "Instance type for slaves" "m1.large"]
    [:availability-zone "Amazon availabilty zone" nil]
+   [:jobflow "A jobflow-id to use with the submit command" nil]
    [:num-instances "Number of instances (including the master)" "1"]
    [:ami-version
     "Which AMI to use (see RunJobFlowRequest#setAmiVersion in the AWS Java SDK)"]
