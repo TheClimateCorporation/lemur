@@ -224,10 +224,11 @@
     (.setActionOnFailure (str ActionOnFailure/TERMINATE_JOB_FLOW))
     (.setHadoopJarStep (.newEnableDebuggingStep (StepFactory.)))))
 
-(defn step-config [name alive? jar-path main-class cli-args & [properties]]
+(defn step-config [name alive? jar-path main-class cli-args & {:keys [action-on-failure properties]}]
   "Create a step to be submitted to EMR.
   jar-path is the hadoop job jar, usually an s3:// path.
   cli-args is a collection of Strings that are passed as args to main-class (can be nil).
+  action-on-failure is a String or enum com.amazonaws.services.elasticmapreduce.model.ActionOnFailure.
   properties is a map of Java properties that are set when the step runs."
   (let [sc (StepConfig. name
              (doto
@@ -235,17 +236,17 @@
                (.setJar jar-path)
                (.setMainClass main-class)
                (.setArgs (vec cli-args)) ;collection of strings
-               (.setProperties (kv-props properties))))]
-    (if alive?
-      (doto sc
-        (.setActionOnFailure (str ActionOnFailure/CANCEL_AND_WAIT)))
-      sc)))
+               (.setProperties (kv-props properties))
+               (.setActionOnFailure (str (or action-on-failure
+                                             (and alive? ActionOnFailure/CANCEL_AND_WAIT)
+                                             ActionOnFailure/TERMINATE_JOB_FLOW)))))]
+    sc))
 
 (defn add-steps
   "Add a step to a running jobflow. Steps is a seq of StepConfig objects.
   Use (step-config) to create StepConfig objects."
   [jobflow-id steps]
-  (AddJobFlowStepsRequest. jobflow-id steps))
+  (.addJobFlowSteps *emr* (AddJobFlowStepsRequest. jobflow-id steps)))
 
 (defn start-job-flow [name steps {:keys [log-uri bootstrap-actions ami-version supported-products]
                                   :or {bootstrap-actions [] supported-products []}
