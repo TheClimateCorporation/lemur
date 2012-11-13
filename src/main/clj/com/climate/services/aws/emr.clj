@@ -247,8 +247,8 @@
   [jobflow-id steps]
   (AddJobFlowStepsRequest. jobflow-id steps))
 
-(defn start-job-flow [name steps {:keys [log-uri bootstrap-actions ami-version supported-products]
-                                  :or {bootstrap-actions [] supported-products []}
+(defn start-job-flow [name steps {:keys [log-uri bootstrap-actions ami-version supported-products visible-to-all-users]
+                                  :or {bootstrap-actions [] supported-products [] visible-to-all-users false}
                                   :as all}]
   (log/info (str "Starting JobFlow " all))
   (let [instances (instances-config all)
@@ -259,7 +259,7 @@
                       (.setAmiVersion ami-version)
                       (.setSupportedProducts supported-products)
                       (.setBootstrapActions bootstrap-actions)
-                      (.setVisibleToAllUsers true)
+                      (.setVisibleToAllUsers visible-to-all-users)
                       (.setSteps steps))]
     (.getJobFlowId (.runJobFlow *emr* request))))
 

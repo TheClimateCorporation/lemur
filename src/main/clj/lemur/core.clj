@@ -561,7 +561,8 @@ calls launch              - take action (upload files, start cluster, etc)
              :keypair (:keypair evaluating-opts)
              :ami-version (:ami-version evaluating-opts)
              :hadoop-version (:hadoop-version evaluating-opts)
-             :supported-products (:supported-products evaluating-opts)}
+             :supported-products (:supported-products evaluating-opts)
+             :visible-to-all-users (true? (:visible-to-all-users evaluating-opts))}
           steps
             (if (:enable-debugging? evaluating-opts)
               (cons (emr/debug-step-config) steps)
