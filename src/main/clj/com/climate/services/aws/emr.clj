@@ -259,6 +259,7 @@
                       (.setAmiVersion ami-version)
                       (.setSupportedProducts supported-products)
                       (.setBootstrapActions bootstrap-actions)
+                      (.setVisibleToAllUsers true)
                       (.setSteps steps))]
     (.getJobFlowId (.runJobFlow *emr* request))))
 
