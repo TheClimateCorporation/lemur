@@ -231,16 +231,15 @@
   action-on-failure is a String or enum com.amazonaws.services.elasticmapreduce.model.ActionOnFailure.
   properties is a map of Java properties that are set when the step runs."
   (let [sc (StepConfig. name
-             (doto
-               (HadoopJarStepConfig.)
-               (.setJar jar-path)
-               (.setMainClass main-class)
-               (.setArgs (vec cli-args)) ;collection of strings
-               (.setProperties (kv-props properties))
-               (.setActionOnFailure (str (or action-on-failure
-                                             (and alive? ActionOnFailure/CANCEL_AND_WAIT)
-                                             ActionOnFailure/TERMINATE_JOB_FLOW)))))]
-    sc))
+                        (doto
+                          (HadoopJarStepConfig.)
+                          (.setJar jar-path)
+                          (.setMainClass main-class)
+                          (.setArgs (vec cli-args)) ;collection of strings
+                          (.setProperties (kv-props properties))))]
+    (.setActionOnFailure sc (str (or action-on-failure
+                                  (and alive? ActionOnFailure/CANCEL_AND_WAIT)
+                                  ActionOnFailure/TERMINATE_JOB_FLOW)))))
 
 (defn add-steps
   "Add a step to a running jobflow. Steps is a seq of StepConfig objects.
