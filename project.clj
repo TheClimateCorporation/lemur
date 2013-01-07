@@ -8,8 +8,8 @@
        ["-Dlog4j.configuration=file:resources/log4j.properties"]
        [])
 
-  :source-path "src/main/clj"
-  :test-path "src/test/clj"
+  :source-paths ["src/main/clj"]
+  :test-paths   ["src/test/clj"]
 
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [org.clojure/tools.logging "0.2.3"]
@@ -33,15 +33,13 @@
 
   :dev-dependencies [[robert/hooke "1.1.2"] ;for leiningen test-selectors
                      [org.clojure/tools.trace "0.7.1"]
-                     [midje "1.3.1"]
-                     [lein-midje "1.0.8"]
+                     [lein-midje "2.0.3"]
+                     [midje "1.5-alpha2"]
                      [com.offbytwo.iclojure/iclojure "1.1.0"]
-                     [clojure-source "1.3.0"]]
+                     [clojure-source "1.3.0"]
+                     [org.clojure/tools.trace "0.7.3"]]
 
-  :test-selectors {:default (fn [v] (not (or (:integration v) (:manual v))))
-                   :integration :integration
-                   :manual :manual
-                   :all (fn [v] (not (:manual v)))}
+ 
 
   :repl-init lemur.repl
   :main ^:skip-aot lemur.repl
@@ -50,5 +48,10 @@
 
   ; Launch irepl:
   ;java -cp lib/*:lib/dev/* com.offbytwo.iclojure.Main
+
+  :test-selectors {:default (fn [v] (not (or (:integration v) (:manual v))))
+                   :integration :integration
+                   :manual :manual
+                   :all (fn [v] (not (:manual v)))}
 
   :aot [lemur.core])
