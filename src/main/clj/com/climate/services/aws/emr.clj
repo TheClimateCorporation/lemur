@@ -9,6 +9,7 @@
   (:import
     java.io.File
     com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient
+    com.amazonaws.services.elasticmapreduce.model.TerminateJobFlowsRequest
     com.amazonaws.services.elasticmapreduce.util.StepFactory
     com.amazonaws.auth.BasicAWSCredentials
     [com.amazonaws.services.elasticmapreduce.model
@@ -224,6 +225,13 @@
     (.setActionOnFailure (str ActionOnFailure/TERMINATE_JOB_FLOW))
     (.setHadoopJarStep (.newEnableDebuggingStep (StepFactory.)))))
 
+(defn terminate-flow-id
+  ([jobflow-id]
+     (terminate-flow-id jobflow-id *emr*))
+  ([jobflow-id emr]
+     (.terminateJobFlows emr
+                         (TerminateJobFlowsRequest. (java.util.ArrayList. [jobflow-id])))))
+
 (defn step-config [name alive? jar-path main-class cli-args & {:keys [action-on-failure properties]}]
   "Create a step to be submitted to EMR.
   jar-path is the hadoop job jar, usually an s3:// path.
@@ -238,8 +246,8 @@
                           (.setArgs (vec cli-args)) ;collection of strings
                           (.setProperties (kv-props properties))))]
     (.setActionOnFailure sc (str (or action-on-failure
-                                  (and alive? ActionOnFailure/CANCEL_AND_WAIT)
-                                  ActionOnFailure/TERMINATE_JOB_FLOW)))))
+                                     (and alive? ActionOnFailure/CANCEL_AND_WAIT)
+                                     ActionOnFailure/TERMINATE_JOB_FLOW)))))
 
 (defn add-steps
   "Add a step to a running jobflow. Steps is a seq of StepConfig objects.

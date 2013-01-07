@@ -24,9 +24,13 @@
      [ec2 :as ec2]
      [common :as awscommon]])
   (:import
+   com.amazonaws.services.elasticmapreduce.util.StepFactory
     [com.amazonaws.services.elasticmapreduce.model
      JobFlowDetail
-     JobFlowExecutionStatusDetail]
+     JobFlowExecutionStatusDetail
+     HadoopJarStepConfig
+     ActionOnFailure
+     StepConfig]
     java.util.Date))
 
 ;; Some tests are labelled as :manual, rather than :integration, because
@@ -36,6 +40,23 @@
 (def test-flow-name "com.climate.services.aws.emr-test")
 
 (def aws-creds (awscommon/aws-credential-discovery))
+
+(def ^:dynamic *flow-args*
+  {:bootstrap-actions
+   ; Only publicly available script, so we don't have to upload the others.
+   [(bootstrap "Hadoop Config"
+               "s3://elasticmapreduce/bootstrap-actions/configure-hadoop"
+               ["-m" "mapred.map.tasks.speculative.execution=false"])]
+   :log-uri (str "s3://" bucket)
+   :keypair (:keypair aws-creds) ; the elastic-mapreduce credentials.json file as a keypair entry
+   :ami-version "latest"
+   :num-instances 2
+   :master-type "m1.xlarge"
+   :slave-type "m1.xlarge"
+   :spot-task-type "m1.xlarge"
+   :spot-task-bid "1.00"
+   :spot-task-num 1
+   :keep-alive false})
 
 (use-fixtures :once
   (fn [f]
@@ -70,22 +91,7 @@
           ["-input" (format "s3://%s/data/simple.txt" bucket)
            "-output" "/out"
            "-mapper" (format "s3://%s/scripts/wc.sh" bucket)])]
-        {:bootstrap-actions
-           ; Only publicly available script, so we don't have to upload the others.
-           [(bootstrap "Hadoop Config"
-                       "s3://elasticmapreduce/bootstrap-actions/configure-hadoop"
-                       ["-m" "mapred.map.tasks.speculative.execution=false"])]
-         :log-uri (str "s3://" bucket)
-         :keypair (:keypair aws-creds) ; the elastic-mapreduce credentials.json file as a keypair entry
-         :ami-version "latest"
-         :num-instances 2
-         :master-type "m1.xlarge"
-         :slave-type "m1.xlarge"
-         :spot-task-type "m1.xlarge"
-         :spot-task-bid "1.00"
-         :spot-task-num 1
-         ;too dangerous to use keep-alive in tests, so tests are limited-- no (emr/add-step) for example
-         :keep-alive false}))))
+       *flow-args*))))
 
 ; Specified as a fn rather than a test. This is a hack to force it to run before
 ; test-wait-on-step.  It will fail if the cluster has already COMPLETED.
@@ -159,3 +165,19 @@
     (is= "m1.xlarge" spot-task-type)
     (is= 20 spot-task-num)
     (is= (format "%.3f" expected-bid) spot-task-bid)))
+
+(defn make-dummy-step []
+  (doto (StepConfig.)
+    (.setName "Dummy")
+    (.setActionOnFailure (str ActionOnFailure/TERMINATE_JOB_FLOW))
+    (.setHadoopJarStep (.newEnableDebuggingStep (StepFactory.)))))
+
+(deftest ^{:manual true} test-add-steps-to-existing-flow
+  (testing "emr/add-step"
+    (binding [*flow-args* (conj *flow-args* {:keep-alive true})]
+      (let [jf-id (setup)
+            dummy-steps (make-dummy-step)]
+        (is= 0 (.size (steps-for-jobflow jf-id)))
+        (add-steps jf-id (java.util.ArrayList. [dummy-steps]))
+        (is= 1 (.size (steps-for-jobflow jf-id)))
+        (terminate-flow-id jf-id)))))
