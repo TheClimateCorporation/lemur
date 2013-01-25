@@ -178,6 +178,6 @@
       (let [jf-id (setup)
             dummy-steps (make-dummy-step)]
         (is= 0 (.size (steps-for-jobflow jf-id)))
-        (add-steps jf-id (java.util.ArrayList. [dummy-steps]))
+        (add-steps jf-id [dummy-steps])
         (is= 1 (.size (steps-for-jobflow jf-id)))
         (terminate-flow-id jf-id)))))

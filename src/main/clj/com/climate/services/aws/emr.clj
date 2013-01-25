@@ -253,7 +253,8 @@
   "Add a step to a running jobflow. Steps is a seq of StepConfig objects.
   Use (step-config) to create StepConfig objects."
   [jobflow-id steps]
-  (.addJobFlowSteps *emr* (AddJobFlowStepsRequest. jobflow-id steps)))
+  (let [steps-array (to-array steps)]
+    (.addJobFlowSteps *emr* (AddJobFlowStepsRequest. jobflow-id steps))))
 
 (defn start-job-flow [name steps {:keys [log-uri bootstrap-actions ami-version supported-products]
                                   :or {bootstrap-actions [] supported-products []}
