@@ -14,6 +14,7 @@
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [org.clojure/tools.logging "0.2.3"]
                  [org.clojure/data.json "0.1.2"]
+                 [bultitude "0.2.0"]
 
                  ; aws-java-sdk-1.3.3 does not specify the correct httpclient, so we do it explicitly
                  [org.apache.httpcomponents/httpclient "4.1.1"]
@@ -33,16 +34,15 @@
 
   :dev-dependencies [[robert/hooke "1.1.2"] ;for leiningen test-selectors
                      [org.clojure/tools.trace "0.7.1"]
-                     [lein-midje "2.0.3"]
-                     [midje "1.5-alpha2"]
                      [com.offbytwo.iclojure/iclojure "1.1.0"]
                      [clojure-source "1.3.0"]
                      [org.clojure/tools.trace "0.7.3"]]
 
- 
-
+  :profiles {:dev {:plugins [[lein-midje "2.0.4"]]
+                   :dependencies [[midje "1.4.0"]]}}
   :repl-init lemur.repl
   :main ^:skip-aot lemur.repl
+  :min-lein-version "2.0.0"
 
   :run-aliases {:lemur lemur.core}
 
