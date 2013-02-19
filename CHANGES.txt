@@ -3,8 +3,13 @@ CHANGES
 1.3.0
 
 - Allow explicit action-on-failure setting for defstep
-
 - New submit command to add a step to a running jobflow
+- Move to lein2
+
+1.2.1
+
+- set the VisibleToAllUsers flag on all jobflows
+- update to version 1.3.24 of the Amazon SDK for Java
 
 1.2.0
 

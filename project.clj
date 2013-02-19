@@ -1,4 +1,4 @@
-(defproject lemur "1.2.0"
+(defproject lemur "1.3.0"
 
   :description "Lemur is a tool to launch hadoop jobs locally or on EMR
                 based on a configuration file, referred to as a jobdef."
@@ -18,7 +18,7 @@
 
                  ; aws-java-sdk-1.3.3 does not specify the correct httpclient, so we do it explicitly
                  [org.apache.httpcomponents/httpclient "4.1.1"]
-                 [com.amazonaws/aws-java-sdk "1.3.3"
+                 [com.amazonaws/aws-java-sdk "1.3.24"
                   :exclusions [javax.mail/mail org.apache.httpcomponents/httpclient]]
 
                  ; TODO these two are only to support hipchat-- isolate that functionality, so these libs can be optional
