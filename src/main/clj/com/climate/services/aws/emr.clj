@@ -247,7 +247,8 @@
                           (.setProperties (kv-props properties))))]
     (.setActionOnFailure sc (str (or action-on-failure
                                      (and alive? ActionOnFailure/CANCEL_AND_WAIT)
-                                     ActionOnFailure/TERMINATE_JOB_FLOW)))))
+                                     ActionOnFailure/TERMINATE_JOB_FLOW)))
+    sc))
 
 (defn add-steps
   "Add a step to a running jobflow. Steps is a seq of StepConfig objects.

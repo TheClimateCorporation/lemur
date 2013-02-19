@@ -32,26 +32,24 @@
                  ; Other
                  [log4j/log4j "1.2.16"]]
 
-  :dev-dependencies [[robert/hooke "1.1.2"] ;for leiningen test-selectors
-                     [org.clojure/tools.trace "0.7.1"]
-                     [com.offbytwo.iclojure/iclojure "1.1.0"]
-                     [clojure-source "1.3.0"]
-                     [org.clojure/tools.trace "0.7.3"]]
+  :plugins [[lein-libdir "0.1.0"]]
+  :libdir-path "lib"
 
   :profiles {:dev {:plugins [[lein-midje "2.0.4"]]
-                   :dependencies [[midje "1.4.0"]]}}
+                   :dependencies [[midje "1.4.0"]
+                                  [org.clojure/tools.trace "0.7.3"]
+                                  [clojure-source "1.3.0"]]}}
+
   :repl-init lemur.repl
   :main ^:skip-aot lemur.repl
   :min-lein-version "2.0.0"
 
   :run-aliases {:lemur lemur.core}
 
-  ; Launch irepl:
-  ;java -cp lib/*:lib/dev/* com.offbytwo.iclojure.Main
-
   :test-selectors {:default (fn [v] (not (or (:integration v) (:manual v))))
                    :integration :integration
                    :manual :manual
                    :all (fn [v] (not (:manual v)))}
 
-  :aot [lemur.core])
+  :aot [lemur.core]
+  )

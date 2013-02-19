@@ -41,7 +41,7 @@ fi
 if [ -f $BASE/lemur-*.jar ]; then
   LEMUR_CP=`echo $BASE/lemur-*.jar`
 else
-  LEMUR_CP=$BASE/src/main/clj:$BASE/classes:$BASE/resources
+  LEMUR_CP=$BASE/src/main/clj:$BASE/target/classes:$BASE/resources
 fi
 
 DEPS_CP=$BASE/lib/*

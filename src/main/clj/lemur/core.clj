@@ -959,4 +959,3 @@ calls launch              - take action (upload files, start cluster, etc)
             (quit :msg (slurp (io/resource "help.txt"))))
         (quit :msg "Unrecognized lemur command" :cmdspec (context-get :command-spec) :exit-code 1))))
   (quit))
-
