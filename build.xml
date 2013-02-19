@@ -3,7 +3,7 @@
   <macrodef name="lein">
     <element name="lein-params" implicit="true"/>
     <sequential>
-      <exec executable="lein" failonerror="yes"
+      <exec executable="lein2" failonerror="yes"
             dir="${basedir}">
         <env key="JVM_OPTS" value="-Droot.logger=error,file,stdout"/>
         <lein-params/>
@@ -11,15 +11,19 @@
     </sequential>
   </macrodef>
 
+  <target name="libdir">
+    <lein><arg value="libdir"/></lein>
+  </target>
+
   <target name="jar">
     <lein><arg value="jar"/></lein>
   </target>
 
-  <target name="package" depends="jar">
+  <target name="package" depends="libdir,jar">
 
     <exec logError="true" executable="bash" outputproperty="jar-name">
       <arg value="-c"/>
-      <arg value="ls lemur-*.jar"/>
+      <arg value="ls target/lemur-*.jar"/>
     </exec>
 
     <fail message="Could not find lemur jar">
@@ -29,7 +33,7 @@
 
     <exec logError="true" executable="sed" failonerror="true" inputstring="${jar-name}" outputproperty="jar-version">
       <arg value="-e"/>
-      <arg value="s/lemur-\(.*\).jar/\1/"/>
+      <arg value="s/.*lemur-\(.*\).jar/\1/"/>
     </exec>
     <echo message="jar ${jar-version}"/>
 
@@ -39,10 +43,13 @@
                   prefix="/lemur-${jar-version}">
         <include name="README.md"/>
         <include name="project.clj"/>
-        <include name="lemur-*.jar"/>
         <include name="lib/*.jar"/>
         <include name="src/"/>
         <include name="examples/"/>
+      </tarfileset>
+      <tarfileset dir="${basedir}/target"
+                  prefix="/lemur-${jar-version}">
+        <include name="lemur-*.jar"/>
       </tarfileset>
       <tarfileset dir="${basedir}"
                   filemode="755"

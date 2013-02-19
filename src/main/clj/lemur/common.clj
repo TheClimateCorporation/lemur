@@ -33,6 +33,8 @@
     java.io.IOException
     java.io.File))
 
+(util/defalias eoval lemur.evaluating-map/eoval)
+
 ;;; Validators
 
 ;TODO make a more extensible model for adding new checks

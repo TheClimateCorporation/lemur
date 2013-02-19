@@ -5,7 +5,6 @@
     [com.climate.shell :as sh]
     [clojure.data.json :as json]
     [clojure.tools.logging :as log]
-    [clojure.tools.trace :as trace]
     [clojure.java.io :as io])
   (:import
     java.io.IOException

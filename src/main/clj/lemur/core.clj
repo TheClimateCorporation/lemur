@@ -101,13 +101,12 @@ calls launch              - take action (upload files, start cluster, etc)
     `(defn ~sym [] (= (context-get :command) ~name))))
 
 (defcommand local?)
+(defcommand submit?)
 (defcommand run?)
 (defcommand dry-run?)
 (defcommand start?)
 (defcommand help?)
 (defcommand formatted-help?)
-
-(util/defalias eoval lemur.evaluating-map/eoval)
 
 (defn profile?
   "Test if the profile x is in use."
@@ -365,7 +364,9 @@ calls launch              - take action (upload files, start cluster, etc)
             (:keep-alive? estep)
             path-to-jar
             (:main-class estep)
-            args))))
+            args
+            :action-on-failure (:action-on-failure estep)
+            :properties (:properties estep)))))
     coll))
 
 (defn- save-metajob
@@ -466,6 +467,22 @@ calls launch              - take action (upload files, start cluster, etc)
     (context-set :jobflow-id jobflow-id)
     (context-set :request-ts request-ts)))
 
+(defmethod launch :submit
+  [command eopts cluster steps jobflow-options uploads metajob]
+  ; upload files
+  (util/upload (:show-progress? eopts) (mapcat val (:jobdef-step uploads)) (:dest-working-dir uploads))
+  (util/upload (:show-progress? eopts) (:jars uploads))
+  ; Write details to metajob file
+  (save-metajob cluster steps metajob)
+  ; launch
+  (let [request-ts (System/currentTimeMillis)
+        steps (mk-steps cluster (filter (complement enable-debugging-step?) steps))
+        jobflow-id (:jobflow eopts)]
+    (emr/add-steps jobflow-id steps)
+    (println "JobFlow id:" jobflow-id)
+    (context-set :jobflow-id jobflow-id)
+    (context-set :request-ts request-ts)))
+
 (defmethod launch :dry-run
   [command eopts cluster steps jobflow-options uploads metajob]
   (println "dry-run, not launching."))
@@ -557,7 +574,7 @@ calls launch              - take action (upload files, start cluster, etc)
              :spot-task-type spot-task-type
              :spot-task-bid spot-task-bid
              :spot-task-num spot-task-num
-             :keep-alive (or (:keep-alive? evaluating-opts) (start?))
+             :keep-alive (or (:keep-alive? evaluating-opts) (start?) (submit?))
              :keypair (:keypair evaluating-opts)
              :ami-version (:ami-version evaluating-opts)
              :hadoop-version (:hadoop-version evaluating-opts)
@@ -579,12 +596,13 @@ calls launch              - take action (upload files, start cluster, etc)
                  (:runtime-jar evaluating-opts)
                    [])
              :bootstrap-actions
-               (if-let [src (:scripts-src-path evaluating-opts)]
-                 [[(s3/slash$ src)
-                   (s3/s3path (:bucket evaluating-opts) (:std-scripts-prefix evaluating-opts))]]
-                 [])
+               (let [src (:scripts-src-path evaluating-opts)]
+                 (if (and src (not (submit?)))
+                   [[(s3/slash$ src)
+                     (s3/s3path (:bucket evaluating-opts) (:std-scripts-prefix evaluating-opts))]]
+                   []))
              :jobdef-cluster
-               (parse-upload-property evaluating-opts)
+               (if (submit?) [] (parse-upload-property evaluating-opts))
              :jobdef-step
                (->> steps
                 (filter map?)
@@ -614,7 +632,7 @@ calls launch              - take action (upload files, start cluster, etc)
                    (concat [:command :app :comment :username :run-id :jar-src-path :runtime-jar :base-uri]
                            display-in-metajob))
                  (doto (DumperOptions.) (.setDefaultFlowStyle DumperOptions$FlowStyle/BLOCK)))
-               (if-not (local?)
+               (if-not (or (local?) (submit?))
                  (vector
                    (util/mk-yaml "Jobflow Options"
                      (merge (select-keys evaluating-opts [:emr-name]) (dissoc jobflow-options :bootstrap-actions))
@@ -925,7 +943,7 @@ calls launch              - take action (upload files, start cluster, etc)
               emr/*emr* (emr/emr aws-creds)
               ec2/*ec2* (ec2/ec2 aws-creds)]
       (case command
-        ("run" "start" "dry-run" "local")
+        ("run" "start" "dry-run" "local" "submit")
           (execute-jobdef jobdef-path)
         "display-types"
           (display-types)
@@ -941,4 +959,3 @@ calls launch              - take action (upload files, start cluster, etc)
             (quit :msg (slurp (io/resource "help.txt"))))
         (quit :msg "Unrecognized lemur command" :cmdspec (context-get :command-spec) :exit-code 1))))
   (quit))
-

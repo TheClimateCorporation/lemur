@@ -17,6 +17,7 @@
     lemur.core
     [lemur.command-line :only [quit]]
     [lemur.evaluating-map :only [evaluating-map]]
+    [lemur.common :only [eoval]]
     midje.sweet
     clojure.test
     lemur.test)
