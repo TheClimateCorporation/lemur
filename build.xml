@@ -42,6 +42,8 @@
       <tarfileset dir="${basedir}"
                   prefix="/lemur-${jar-version}">
         <include name="README.md"/>
+        <include name="CHANGES.txt"/>
+        <include name="LICENSE"/>
         <include name="project.clj"/>
         <include name="lib/*.jar"/>
         <include name="src/"/>
