@@ -37,7 +37,7 @@
     </exec>
     <echo message="jar ${jar-version}"/>
 
-    <tar destfile="${basedir}/tmp/releases/lemur-${jar-version}.tgz"
+    <tar destfile="${basedir}/releases/lemur-${jar-version}.tgz"
          compression="gzip">
       <tarfileset dir="${basedir}"
                   prefix="/lemur-${jar-version}">

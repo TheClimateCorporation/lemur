@@ -22,6 +22,7 @@ Lemur is a tool to launch hadoop jobs locally or on EMR, based on a configuratio
 - All settings can be literal values, interpolated strings (e.g. set the S3 bucket as "com.your-co.${env}.hadoop"), or functions for ultimate flexibility
 - Import common options, functionality and behavior to avoid duplication (i.e. DRY principle)
 - Pass-through command-line options, allows you to specify extra args on the command line that are meaningful to your hadoop main function, but are unknown to lemur or your jobdef
+- Submit a step to an already running jobflow
 
 ### A Note About the Ruby elastic-mapreduce CLI tool
 
@@ -29,7 +30,7 @@ Lemur does not try to replace elastic-mapreduce.  While there is some overlap, l
 
 ### Installation
 
-1. Download the tar-gzip from the GitHub Downloads link
+1. Download the tar-gzip (.tgz) from the releases/ directory
 1. Expand into some install location
 1. set LEMUR_HOME to the top of the install path
 1. set LEMUR_EXTRA_CLASSPATH to any classpath entries (colon separated) that you want lemur to include when it runs your jobdef. The classpath that includes you base files, or other functions or libraries for use by your jobdefs for example.

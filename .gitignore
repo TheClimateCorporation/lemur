@@ -5,6 +5,8 @@
 /native
 /.lein-failures
 /checkouts
+/.lein-plugins
+/target
 /.lein-deps-sum
 /tmp
 /.idea
