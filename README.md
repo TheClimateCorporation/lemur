@@ -30,7 +30,7 @@ Lemur does not try to replace elastic-mapreduce.  While there is some overlap, l
 
 ### Installation
 
-1. Download the tar-gzip (.tgz) from the releases/ directory
+1. Download the latest tar-gzip (.tgz) from http://download.climate.com/lemur/releases/lemur-1.3.1.tgz
 1. Expand into some install location
 1. set LEMUR_HOME to the top of the install path
 1. set LEMUR_EXTRA_CLASSPATH to any classpath entries (colon separated) that you want lemur to include when it runs your jobdef. The classpath that includes you base files, or other functions or libraries for use by your jobdefs for example.
@@ -56,7 +56,7 @@ For reference, the JSON format is:
 
 v0.9.7 Clojure 1.2
 
-v1.0.1+ Clojure 1.3 
+v1.0.1+ Clojure 1.3
 
 I've used lemur on Mac OS X and Linux.  It MAY work on Windows (if you use cygwin).  If you try it on Windows, I would be interested in hearing about your experience (patches welcome).
 
@@ -72,6 +72,7 @@ bin/lemur run ./jobdef.clj        - Run a job on EMR
 bin/lemur dry-run ./jobdef.clj    - Dry-run, i.e. just print out what would be done
 bin/lemur start ./jobdef.clj      - Start an EMR cluster, but don't run the steps (jobs)
 bin/lemur local ./jobdef.clj      - Run the job using local hadoop (e.g. standalone mode)
+bin/lemur submit ./jobdef.clj --jobflow j-123456789  - Submit steps to an existing jobflow (running cluster)
 ```
 ###### Examples
 ```
