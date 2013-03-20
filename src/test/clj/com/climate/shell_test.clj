@@ -39,14 +39,17 @@
                   :env (merge-env {:FOO "bar"}))))))
 
 (deftest test-merge-env-2
-  (is (re-find
-        #"\[\"[\.\/\w]+\" \"bar\"\]"
-        (:out (sh "java" "-cp" (clj-main-jar) "clojure.main" "-e"
-              "(vector
-                 (get (System/getenv) \"JAVA_HOME\")
-                 (get (System/getenv) \"FOO\"))"
-              :err :pass
-              :env (merge-env {:FOO "bar"}))))))
+  (is (let [java-home (get (System/getenv) "JAVA_HOME")]
+        (and
+          (not-empty java-home)
+          (.startsWith
+            (:out (sh "java" "-cp" (clj-main-jar) "clojure.main" "-e"
+                  "(vector
+                     (get (System/getenv) \"JAVA_HOME\")
+                     (get (System/getenv) \"FOO\"))"
+                  :err :pass
+                  :env (merge-env {:FOO "bar"})))
+            (str "[" (pr-str java-home) " \"bar\"]"))))))
 
 (deftest test-sh-with-files
   (let [txt "some test text"
