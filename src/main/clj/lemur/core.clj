@@ -920,7 +920,7 @@ calls launch              - take action (upload files, start cluster, etc)
                      ~{~{~12<~a~>~}~%~}"
                     (take-nth 2 flds)
                     details)
-      (flush))
+    (flush))
   (quit))
 
 (defmacro when-local-test

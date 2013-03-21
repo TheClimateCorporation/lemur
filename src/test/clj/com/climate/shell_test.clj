@@ -39,7 +39,7 @@
                   :env (merge-env {:FOO "bar"}))))))
 
 (deftest test-merge-env-2
-  (is (when-let [java-home (not-empty (get (System/getenv) "JAVA_HOME"))]
+  (is (when-let [java-home (get (System/getenv) "JAVA_HOME")]
         (.startsWith
           (:out (sh "java" "-cp" (clj-main-jar) "clojure.main" "-e"
                 "(vector
@@ -47,7 +47,7 @@
                    (get (System/getenv) \"FOO\"))"
                 :err :pass
                 :env (merge-env {:FOO "bar"})))
-          (str "[" (pr-str java-home) " \"bar\"]")))))
+          (pr-str (vector java-home "bar"))))))
 
 (deftest test-sh-with-files
   (let [txt "some test text"
