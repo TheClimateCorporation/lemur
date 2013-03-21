@@ -125,9 +125,10 @@
   ([hours]
    (spot-price-history hours nil))
   ([hours type]
-   (let [now (GregorianCalendar.)
-         end (.getTime now)
-         start (.getTime (.add now GregorianCalendar/HOUR_OF_DAY hours))
+   (let [[start end] (let [volatile-cal (GregorianCalendar.)
+                           end (.getTime volatile-cal)]
+                       (.add volatile-cal GregorianCalendar/HOUR_OF_DAY (- hours))
+                       [(.getTime volatile-cal) end])
          sort-by (partial sort-by #(.getTimestamp %))
          req (doto (DescribeSpotPriceHistoryRequest.)
                (.setStartTime start)
