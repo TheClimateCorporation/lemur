@@ -902,7 +902,8 @@ calls launch              - take action (upload files, start cluster, etc)
     (cl-format true "~{~12<~a~>~}~%~
                      ~{~{~12<~a~>~}~%~}"
                     (take-nth 2 flds)
-                    details))
+                    details)
+    (flush))
   (quit))
 
 (defn- spot-price-history
@@ -918,7 +919,8 @@ calls launch              - take action (upload files, start cluster, etc)
     (cl-format true "~{~12<~a~>~}~%~
                      ~{~{~12<~a~>~}~%~}"
                     (take-nth 2 flds)
-                    details))
+                    details)
+    (flush))
   (quit))
 
 (defmacro when-local-test
