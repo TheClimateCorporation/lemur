@@ -9,23 +9,23 @@
   (:import
     java.io.File
     com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient
-    com.amazonaws.services.elasticmapreduce.model.TerminateJobFlowsRequest
     com.amazonaws.services.elasticmapreduce.util.StepFactory
     com.amazonaws.auth.BasicAWSCredentials
     [com.amazonaws.services.elasticmapreduce.model
-     DescribeJobFlowsRequest
-     RunJobFlowRequest
-     JobFlowInstancesConfig
-     InstanceGroupConfig
-     BootstrapActionConfig
-     ScriptBootstrapActionConfig
-     AddJobFlowStepsRequest
-     StepConfig
-     StepDetail
-     HadoopJarStepConfig
-     PlacementType
-     ActionOnFailure
-     KeyValue]))
+      ActionOnFailure
+      AddJobFlowStepsRequest
+      BootstrapActionConfig
+      DescribeJobFlowsRequest
+      HadoopJarStepConfig
+      InstanceGroupConfig
+      JobFlowInstancesConfig
+      KeyValue
+      PlacementType
+      RunJobFlowRequest
+      ScriptBootstrapActionConfig
+      StepConfig
+      StepDetail
+      TerminateJobFlowsRequest]))
 
 ; TODO All functions that use this dynamic var should have an additional fn
 ;      signature where the object can be passed in explicitly

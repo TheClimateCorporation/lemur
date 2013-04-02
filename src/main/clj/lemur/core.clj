@@ -148,6 +148,7 @@ calls launch              - take action (upload files, start cluster, etc)
                    (util/collectify profiles))))))
 
 (defn- add-fns-to-coll
+  "Filters from args all functions not preceded by nil/false."
   [context-key & args]
   (let [[new-fs _]
           (reduce (fn [[result last-cond] item]
@@ -177,8 +178,8 @@ calls launch              - take action (upload files, start cluster, etc)
                 [(:opt-name doc-string)+])}
   catch-args
   "args contains either vectors ([opt-name doc-string] or [opt-name doc-string default]),
-  or alternating pairs of keyword/string. The keyword is the option name, the string is
-  the doc text. No default value is allowed when using the latter form.  Example:
+  or alternating pairs of keyword/doc-string. The keyword is the option name, the string
+  is the doc text. No default value is allowed when using the latter form.  Example:
     (catch-args :foo \"something about foo\"
                 :bar \"bar help\"
                 [:baz \"baz help\" 1])"
@@ -301,7 +302,7 @@ calls launch              - take action (upload files, start cluster, etc)
     :else
       (str (:jar-uri estep) "/" (ccio/basename (:jar-src-path estep)))))
 
-(defn-  step-args
+(defn- step-args
   [estep]
   ; error on extra args, not in defstep
   (let [args-in-step-without-order
@@ -959,5 +960,6 @@ calls launch              - take action (upload files, start cluster, etc)
           (if jobdef-path
             (execute-jobdef jobdef-path)
             (quit :msg (slurp (io/resource "help.txt"))))
-        (quit :msg "Unrecognized lemur command" :cmdspec (context-get :command-spec) :exit-code 1))))
+        (quit :msg (if command (str "Unrecognized lemur command: " command))
+              :cmdspec (context-get :command-spec) :exit-code 1))))
   (quit))
