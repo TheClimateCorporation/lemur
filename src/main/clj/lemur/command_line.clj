@@ -229,12 +229,16 @@
       (update-in c [:command-spec]
         (fn [old]
           (let [result (concat old coll)
-                names (->> result (map first) (map name) sort doall)]
-            ; check for duplicate names
-            (if (= (count (set names)) (count names))
+                ; check for duplicate names
+                names (->> result (map first) (map name))
+                dups (->> (frequencies names)
+                       (filter #(> (second %) 1))
+                       (map first)
+                       (apply sorted-set))]
+            (if (empty? dups)
               result
               (throw (IllegalStateException.
-                       (str "Command spec contains duplicates: " (seq names)))))))))))
+                       (str "Command spec contains duplicates: " (s/join " " dups)))))))))))
 
 (def init-command-spec
   [[:keep-alive? "Keep cluster alive after running the job." false]

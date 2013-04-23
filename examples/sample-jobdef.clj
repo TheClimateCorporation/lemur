@@ -43,7 +43,7 @@
 ;   should end with '?', and then no value will be expected on the command line,
 ;   default-value is optional; or
 ;
-;   2) a pair of values, option-name doc-string
+;   2) a pair of values, :option-name doc-string
 ;
 ;(catch-args
 ;  [:dummy "do nothing with this value" "dummy-default"]

@@ -59,7 +59,7 @@
       {:run-path "${app}"
        :base-uri "/tmp/lemur/${run-path}"}
 
-    :runtime (util/time-str "yyyy-MM-dd-HHmm")
+    :runtime (util/time-str)
     :uuid8 (util/uuid 8)
     :username (System/getProperty "user.name")
     :app "${jobdef-file}"
