@@ -833,7 +833,7 @@ calls launch              - take action (upload files, start cluster, etc)
                       opt-key (get-opt-key arg-key orig-val)]
                   ; test if this arg is explicit (i.e. appears in catch-args)
                   (if (->> (context-get :command-spec) (map first) (filter #(= opt-key %)) seq)
-                      sm
+                    sm
                     ; if not explicit, create implicit command line arg
                     (let [opt-name (name opt-key)]
                       (catch-args [opt-key
