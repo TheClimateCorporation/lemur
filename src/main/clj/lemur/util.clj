@@ -37,7 +37,7 @@
 (defn time-str
   "The current time (UTC) as a string. Default format is yyyy-MM-dd-HHmm"
   ([]
-    (time-str "yyyy-MM-dd HH:mm:ss"))
+    (time-str "yyyy-MM-dd-HHmm"))
   ([time-format]
     (let [sdf (doto (SimpleDateFormat. time-format)
                     (.setTimeZone (TimeZone/getTimeZone "UTC")))]

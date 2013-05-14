@@ -36,7 +36,7 @@
     { :letter \"c\" }
   would yield
     \"abcdef\"
-  Note that the map-value keys should be keywords."
+  Note that the value-map keys should be keywords."
   [s value-map]
   (-> s
     (s/replace #"\$\{ENV\.([^\}]+)\}" #(->> % second (get ENV) str))

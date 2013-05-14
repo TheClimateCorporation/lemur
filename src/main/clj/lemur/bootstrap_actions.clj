@@ -56,7 +56,7 @@ with hadoop-config."
   (mk-config "hbase"))
 
 (defn configure-hadoop
-  "Add support for inline 'configure-hadoop' keys in defcluster."
+  "Add support for inline :hadoop-config.* keys in defcluster."
   [eopts]
   (when-let [hc (seq (mk-hadoop-config eopts))]
     ["Hadoop Config"
@@ -64,7 +64,7 @@ with hadoop-config."
      hc]))
 
 (defn configure-hbase
-  "Add support for inline 'configure-hbase' keys in defcluster."
+  "Add support for inline :hbase-config.* keys in defcluster."
   [eopts]
   (when-let [hc (seq (mk-hbase-config eopts))]
     ["HBase Config"
