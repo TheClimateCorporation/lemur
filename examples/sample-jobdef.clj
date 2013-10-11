@@ -340,5 +340,11 @@
 ;  :ready
 ;(wait <stage>)
 
-; If you want to block on step completion; if timeout is reached, it will stop and throw an exception.
+; If you want to block on step completion use wait-on-step as below;
+; returns a map with information on how the job completed.  If the timeout expires it might look like
+;    {:timeout true, :success false}
+; if the job completes before the timeout expires it might look like
+;    {:success true}
+; Read the function documentation for more details.
+;
 ;(wait-on-step step timeout-seconds)
