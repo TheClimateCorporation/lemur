@@ -1,10 +1,14 @@
 <project name="Lemur" default="package" basedir=".">
 
+  <!-- Define default for ${args} in the lein exec below. -->
+  <property name="args" value="" />
+
   <macrodef name="lein">
     <element name="lein-params" implicit="true"/>
     <sequential>
       <exec executable="lein2" failonerror="yes"
             dir="${basedir}">
+        <arg line="${args}"/>
         <env key="JVM_OPTS" value="-Droot.logger=error,file,stdout"/>
         <lein-params/>
       </exec>

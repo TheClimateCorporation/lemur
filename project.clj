@@ -11,7 +11,7 @@
   :source-paths ["src/main/clj"]
   :test-paths   ["src/test/clj"]
 
-  :dependencies [[org.clojure/clojure "1.3.0"]
+  :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/tools.logging "0.2.3"]
                  [org.clojure/data.json "0.1.2"]
                  [bultitude "0.2.0"]
@@ -37,8 +37,9 @@
 
   :profiles {:dev {:plugins [[lein-midje "2.0.4"]]
                    :dependencies [[midje "1.4.0"]
-                                  [org.clojure/tools.trace "0.7.3"]
-                                  [clojure-source "1.3.0"]]}}
+                                  [org.clojure/tools.trace "0.7.3"]]}
+             :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
+             :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}}
 
   :repl-init lemur.repl
   :main ^:skip-aot lemur.repl
