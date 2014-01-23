@@ -58,6 +58,8 @@ v0.9.7 Clojure 1.2
 
 v1.0.1+ Clojure 1.3
 
+v1.4.0+ Clojure 1.5
+
 I've used lemur on Mac OS X and Linux.  It MAY work on Windows (if you use cygwin).  If you try it on Windows, I would be interested in hearing about your experience (patches welcome).
 
 ### Usage
