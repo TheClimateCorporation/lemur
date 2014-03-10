@@ -561,6 +561,9 @@ calls launch              - take action (upload files, start cluster, etc)
     (log/debug "FULL EVALUATING OPTIONS" evaluating-opts)
 
     ;;; config
+    
+    (when-let [endpoint (:endpoint evaluating-opts)]
+      (.setEndpoint emr/*emr* endpoint))
 
     (let [[spot-task-type spot-task-bid spot-task-num]
             (emr/parse-spot-task-group (:spot-task-group evaluating-opts))
