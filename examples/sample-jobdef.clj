@@ -288,6 +288,11 @@
   ; EXAMPLE
   ;:local {:hadoop-env {"HADOOP_HEAPSIZE" "2048"}}
 
+  ; To run cluster in non default region, specify AWS API endpoint
+  ; (list of endpoints http://docs.aws.amazon.com/general/latest/gr/rande.html#emr_region)
+  ;:endpoint "elasticmapreduce.eu-west-1.amazonaws.com"
+  ; To run cluster in VPC subnet, specify subnet's id
+  ;:subnet-id "subnet-b35104f5"
   )
 
 

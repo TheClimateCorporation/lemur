@@ -179,7 +179,7 @@
 
 (defn instances-config [{:keys [master-type slave-type num-instances keypair keep-alive
                                 availability-zone spot-task-type spot-task-bid
-                                spot-task-num hadoop-version]
+                                spot-task-num hadoop-version subnet-id]
                          :or {master-type "m1.large"
                               slave-type "m1.large"
                               num-instances 3
@@ -194,7 +194,8 @@
         jf (doto (JobFlowInstancesConfig.)
              (.setKeepJobFlowAliveWhenNoSteps keep-alive)
              (.setInstanceGroups (filter identity [master-config core-config task-config]))
-             (.setEc2KeyName keypair))]
+             (.setEc2KeyName keypair)
+             (.setEc2SubnetId subnet-id))]
     (when hadoop-version
       (.setHadoopVersion jf hadoop-version))
     (when availability-zone
