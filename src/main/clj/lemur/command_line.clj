@@ -253,6 +253,8 @@
     "Which AMI to use (see RunJobFlowRequest#setAmiVersion in the AWS Java SDK)"]
    [:endpoint
     "AWS API endpoint for non default regions. For example elasticmapreduce.eu-west-1.amazonaws.com"]
+   [:subnet-id
+    "VPC subnet id"]
    [:spot-task-group
     (str "Create a task group w/ spot instances. Value is type,price,num-addl-instances. "
          "E.g. m1.xlarge,30%,300")]
