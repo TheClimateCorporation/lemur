@@ -249,6 +249,9 @@
    [:availability-zone "Amazon availabilty zone" nil]
    [:jobflow "A jobflow-id to use with the submit command" nil]
    [:num-instances "Number of instances (including the master)" "1"]
+   [:job-flow-role "An IAM role for the job flow"]
+   [:service-role "The IAM role that will be assumed by the Amazon EMR service
+                   to access AWS resources on your behalf"]
    [:ami-version
     "Which AMI to use (see RunJobFlowRequest#setAmiVersion in the AWS Java SDK)"]
    [:endpoint
