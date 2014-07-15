@@ -16,13 +16,12 @@
                  [org.clojure/data.json "0.1.2"]
                  [bultitude "0.2.0"]
 
-                 ; aws-java-sdk-1.3.3 does not specify the correct httpclient, so we do it explicitly
-                 [org.apache.httpcomponents/httpclient "4.1.1"]
-                 [com.amazonaws/aws-java-sdk "1.3.24"
-                  :exclusions [javax.mail/mail org.apache.httpcomponents/httpclient]]
+                 [com.amazonaws/aws-java-sdk "1.8.4"
+                  :exclusions [commons-codec]]
+                 [commons-codec "1.4"]
 
                  ; TODO these two are only to support hipchat-- isolate that functionality, so these libs can be optional
-                 [clj-http "0.1.3"]
+                 [clj-http "0.1.3" :exclusions [commons-codec]]
                  [org.yaml/snakeyaml "1.7"]
 
                  ; TODO we should be able to consolidate on one or the other of these:

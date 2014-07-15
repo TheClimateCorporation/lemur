@@ -170,7 +170,7 @@
   (try
     (.getObjectMetadata *s3* (bucket-name bucket-like) key)
     (catch AmazonS3Exception e
-      (if-not (= "Not Found" (.getMessage e))
+      (if-not (= 404 (.getStatusCode e))
         (throw e)))))
 
 (defn delete-object

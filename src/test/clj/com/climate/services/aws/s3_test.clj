@@ -18,6 +18,7 @@
     lemur.test
     clojure.test)
   (:require
+    [alex-and-georges.debug-repl :refer [debug-repl]]
     [com.climate.services.aws.common :as awscommon]
     [clojure.tools.logging :as log])
   (:import
