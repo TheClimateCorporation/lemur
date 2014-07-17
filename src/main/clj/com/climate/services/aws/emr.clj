@@ -258,7 +258,9 @@
   (let [steps-array (to-array steps)]
     (.addJobFlowSteps *emr* (AddJobFlowStepsRequest. jobflow-id steps))))
 
-(defn start-job-flow [name steps {:keys [log-uri bootstrap-actions ami-version supported-products visible-to-all-users]
+(defn start-job-flow [name steps {:keys [log-uri bootstrap-actions ami-version
+                                         supported-products visible-to-all-users
+                                         job-flow-role service-role]
                                   :or {bootstrap-actions [] supported-products [] visible-to-all-users false}
                                   :as all}]
   (log/info (str "Starting JobFlow " all))
@@ -268,6 +270,8 @@
                       (.setLogUri log-uri) ;can be nil (i.e. no logs)
                       (.setInstances instances)
                       (.setAmiVersion ami-version)
+                      (.setServiceRole service-role)
+                      (.setJobFlowRole job-flow-role)
                       (.setSupportedProducts supported-products)
                       (.setBootstrapActions bootstrap-actions)
                       (.setVisibleToAllUsers visible-to-all-users)

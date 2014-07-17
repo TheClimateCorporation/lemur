@@ -561,7 +561,7 @@ calls launch              - take action (upload files, start cluster, etc)
     (log/debug "FULL EVALUATING OPTIONS" evaluating-opts)
 
     ;;; config
-    
+
     (when-let [endpoint (:endpoint evaluating-opts)]
       (.setEndpoint emr/*emr* endpoint))
 
@@ -580,6 +580,8 @@ calls launch              - take action (upload files, start cluster, etc)
              :spot-task-num spot-task-num
              :keep-alive (or (:keep-alive? evaluating-opts) (start?) (submit?))
              :keypair (:keypair evaluating-opts)
+             :service-role (:service-role evaluating-opts)
+             :job-flow-role (:job-flow-role evaluating-opts)
              :ami-version (:ami-version evaluating-opts)
              :hadoop-version (:hadoop-version evaluating-opts)
              :supported-products (:supported-products evaluating-opts)
