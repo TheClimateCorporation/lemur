@@ -1,5 +1,10 @@
 CHANGES
 
+1.4.1
+
+- Project depends on aws-java-sdk 1.8.4
+- add job-flow-role service-role as cli options
+
 1.4.0
 
 - Project depends on Clojure version 1.5.1
