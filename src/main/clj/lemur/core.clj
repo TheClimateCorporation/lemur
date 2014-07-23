@@ -426,8 +426,8 @@ calls launch              - take action (upload files, start cluster, etc)
         ; TODO Allow pass-through of hadoop options like "--conf <dir>"
         (log/warn "Using your locally installed hadoop binaries and configuration.")
 
-        (let [hadoop-cmd [hadoop-bin "jar" (:jar-src-path estep) (:main-class estep)]
-              cmd (concat hadoop-cmd args)]
+        (let [hadoop-cmd [hadoop-bin "jar" (step-jar estep) (:main-class estep)]
+              cmd (->> args (concat hadoop-cmd) (filter identity))]
 
           ; Print the full hadoop command line.  In theory, users should be able to
           ; copy+paste this output in order to run the hadoop job locally and
