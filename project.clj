@@ -35,8 +35,7 @@
   :libdir-path "lib"
 
   :profiles {:dev {:plugins [[lein-midje "2.0.4"]]
-                   :dependencies [[midje "1.4.0"]
-                                  [org.clojure/tools.trace "0.7.3"]]}
+                   :dependencies [[midje "1.4.0"]]}
              :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
              :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}}
 
