@@ -738,7 +738,7 @@ calls launch              - take action (upload files, start cluster, etc)
                 (steps-for-active-profiles profile-steps))]
         (fire* (context-get :command) cluster steps))))
 
-(defn- execute-jobdef
+(defn execute-jobdef
   [file]
   (when-not file
     (quit :msg "No jobdef file was supplied" :exit-code 1
@@ -896,7 +896,7 @@ calls launch              - take action (upload files, start cluster, etc)
   `(let [~eopts-sym (lemur.evaluating-map/evaluating-map (full-options ~cluster ~step))]
      ~@body))
 
-(defn- display-types
+(defn display-types
   []
   (let [flds ["Family" :family "Instance" :type "CPUs" :cpu "Arch" :arch "Mem (gb)" :mem
               "IO speed" :io "Demand $" :us-east-demand "Reserve $" :us-east-reserve]
@@ -913,7 +913,7 @@ calls launch              - take action (upload files, start cluster, etc)
     (flush))
   (quit))
 
-(defn- spot-price-history
+(defn spot-price-history
   []
   (let [flds ["Instance" (memfn getInstanceType) "Zone" (memfn getAvailabilityZone)
               "Timestamp" (memfn getTimestamp) "Spot $" (memfn getSpotPrice)]
@@ -936,36 +936,3 @@ calls launch              - take action (upload files, start cluster, etc)
   `(when (and (profile? :test) (local?))
      true ;default if body is empty
      ~@body))
-
-(defn -main
-  "Run lemur help."
-  [& [command & args]]
-  (add-command-spec* context init-command-spec)
-  (let [[profiles remaining] (split-with #(.startsWith % ":") args)
-        aws-creds (awscommon/aws-credential-discovery)
-        jobdef-path (first remaining)]
-    (add-profiles profiles)
-    (context-set :jobdef-path jobdef-path)
-    (context-set :raw-args (rest remaining))
-    (context-set :command command)
-    (binding [s3/*s3* (s3/s3 aws-creds)
-              emr/*emr* (emr/emr aws-creds)
-              ec2/*ec2* (ec2/ec2 aws-creds)]
-      (case command
-        ("run" "start" "dry-run" "local" "submit")
-          (execute-jobdef jobdef-path)
-        "display-types"
-          (display-types)
-        "spot-price-history"
-          (spot-price-history)
-        "version"
-          (quit :msg (str "Lemur " (System/getenv "LEMUR_VERSION")))
-        "formatted-help"
-          (execute-jobdef jobdef-path)
-        "help"
-          (if jobdef-path
-            (execute-jobdef jobdef-path)
-            (quit :msg (slurp (io/resource "help.txt"))))
-        (quit :msg (if command (str "Unrecognized lemur command: " command))
-              :cmdspec (context-get :command-spec) :exit-code 1))))
-  (quit))

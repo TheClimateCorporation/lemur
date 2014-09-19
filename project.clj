@@ -43,12 +43,12 @@
   :main ^:skip-aot lemur.repl
   :min-lein-version "2.0.0"
 
-  :run-aliases {:lemur lemur.core}
+  :run-aliases {:lemur lemur.tool}
 
   :test-selectors {:default (fn [v] (not (or (:integration v) (:manual v))))
                    :integration :integration
                    :manual :manual
                    :all (fn [v] (not (:manual v)))}
 
-  :aot [lemur.core]
+  :aot [lemur.core lemur.tool]
   )
