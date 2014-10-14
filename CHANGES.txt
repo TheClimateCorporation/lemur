@@ -1,5 +1,10 @@
 CHANGES
 
+1.4.3
+
+- Fix binary argument passthrough (e.g. "--no-bar")
+- Fix some tests
+
 1.4.2
 
 - Hadoop streaming and step-jar selection enabled in local mode
