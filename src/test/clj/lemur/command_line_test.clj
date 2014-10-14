@@ -69,7 +69,15 @@
       (parse-args
         [[:foo "foo doc" "default1"] [:bar? "optional boolean" true]]
         ["--baz" "baz-val"])
-        => [{:bar? true :foo "default1"} {} ["--baz" "baz-val"] nil])))
+        => [{:bar? true :foo "default1"} {} ["--baz" "baz-val"] nil]
+
+      ;; Check passthrough
+      (parse-args
+        [] ["--bar"])
+        => [{} {} ["--bar"] nil]
+      (parse-args
+        [] ["--no-bar"])
+        => [{} {} ["--no-bar"] nil])))
 
 (deftest test-validate
   (let [eopts
