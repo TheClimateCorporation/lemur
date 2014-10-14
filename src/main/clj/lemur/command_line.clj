@@ -126,12 +126,12 @@
     (let [[options remaining look-for]
             (reduce (partial parse-args cmd-spec) [{} [] nil] args)]
       [(defaults-from-cmd-spec cmd-spec) options remaining look-for]))
-  ([cmd-spec [options remaining look-for] arg]
+  ([cmd-spec [options remaining look-for] orig-arg]
     ; Continue by processing one arg at a time
     (let [as-keyword #(->> % (re-find #"^--(.*)") second keyword)
-          option? (re-find #"^--" arg)
-          bang-option? (re-find #"^--no-(.*)$" arg)
-          arg (if bang-option? (str "--" (second bang-option?)) arg)
+          option? (re-find #"^--" orig-arg)
+          bang-option? (re-find #"^--no-(.*)$" orig-arg)
+          arg (if bang-option? (str "--" (second bang-option?)) orig-arg)
           find (fn [x] (seq (filter #(->> % first name (str "--") (= x)) cmd-spec)))
           in-cmd-spec? (find arg)
           boolean-in-cmd-spec? (find (str arg "?"))]
@@ -160,7 +160,7 @@
           [(assoc options (as-keyword (str arg "?")) true) remaining nil]
         ;not an option or not ours
         :else
-          [options (conj remaining arg) nil]))))
+          [options (conj remaining orig-arg) nil]))))
 
 (defn extract-cl-args
   "An alternate command line parser that takes an abbreviated cmd-spec. This is useful
