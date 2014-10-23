@@ -66,32 +66,50 @@ calls fire*               - interprets the structures (cluster, steps, options),
 calls launch              - take action (upload files, start cluster, etc)
 )
 
-(defonce context
-  (atom {:jobdef-path nil     ;The path of the jobdef file being processed, if any
-         :command nil         ;The lemur command, e.g. start, run, help, etc
-         :jobflow-id nil      ;The jobflow-id, populated after the cluster is launched
-         :request-ts nil      ;The timestamp of when the emr request was sent to AWS
-         :validators []       ;A collection of validator functions
-         :command-spec []     ;Command line options to parse for
-         :profiles []         ;List of profiles to apply (left-to-right)
-         :base {}             ;Base configuration
-         :hooks []            ;Actions to be performed pre- or post- fire!
-         :options {}          ;General options
-         :option-defaults {}  ;The default values from the command-spec
-         :remaining []        ;Remaining arguments from the command line after parsing out known options
-         :raw-args []}))      ;Raw args from command-line
+(def default-context
+  {:jobdef-path nil     ;The path of the jobdef file being processed, if any
+   :command nil         ;The lemur command, e.g. start, run, help, etc
+   :jobflow-id nil      ;The jobflow-id, populated after the cluster is launched
+   :request-ts nil      ;The timestamp of when the emr request was sent to AWS
+   :validators []       ;A collection of validator functions
+   :command-spec []     ;Command line options to parse for
+   :profiles []         ;List of profiles to apply (left-to-right)
+   :base {}             ;Base configuration
+   :hooks []            ;Actions to be performed pre- or post- fire!
+   :options {}          ;General options
+   :option-defaults {}  ;The default values from the command-spec
+   :remaining []        ;Remaining arguments from the command line after parsing out known options
+   :raw-args []})      ;Raw args from command-line
+
+(defn create-context []
+  (atom default-context))
+
+;; Make tests happy by having a context and setting the context
+(def context (create-context))
+(def ^:dynamic *context* context)
+
+(defmacro in-context [& body]
+  `(binding [*context* (create-context)]
+     ~@body))
+
+(defn assert-context-given []
+  (when (instance? clojure.lang.Var$Unbound *context*)
+    (throw (ex-info "No context was given. Wrap your code with `(in-context ...)" {}))))
 
 (defn context-get
   [k]
-  (get @context k))
+  (assert-context-given)
+  (get @*context* k))
 
 (defn context-set
   [k v]
-  (swap! context #(assoc % k v)))
+  (assert-context-given)
+  (swap! *context* #(assoc % k v)))
 
 (defn context-update
   [keys f]
-  (swap! context
+  (assert-context-given)
+  (swap! *context*
          (fn [c] (update-in c keys f))))
 
 (defmacro defcommand
@@ -187,7 +205,7 @@ calls launch              - take action (upload files, start cluster, etc)
         arg-vecs (get args-map true)
         arg-pairs (->> (get args-map false)
                     (partition 2))]
-    (cli/add-command-spec* context (concat arg-vecs arg-pairs))))
+    (cli/add-command-spec* *context* (concat arg-vecs arg-pairs))))
 
 (defn- apply-profile
   "Override entries in the options with entries from the nested profile if one exists."
@@ -255,7 +273,7 @@ calls launch              - take action (upload files, start cluster, etc)
            (util/lemur-merge
              opts-after-profiles
              (context-get :options)
-             (select-keys @context [:command :jobdef-path :remaining]))]
+             (select-keys @*context* [:command :jobdef-path :remaining]))]
      (->> opts-after-command-line
        (filter #(-> % val nil? not))
        (into {})))))
