@@ -50,5 +50,5 @@
                    :manual :manual
                    :all (fn [v] (not (:manual v)))}
 
-  :aot [lemur.core lemur.tool]
+  :aot [lemur.tool]
   )

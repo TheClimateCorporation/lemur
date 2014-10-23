@@ -37,8 +37,7 @@
     com.amazonaws.services.elasticmapreduce.model.StepConfig
     [org.yaml.snakeyaml DumperOptions
                         DumperOptions$FlowStyle
-                        DumperOptions$ScalarStyle])
-  (:gen-class))
+                        DumperOptions$ScalarStyle]))
 
 (comment
 
