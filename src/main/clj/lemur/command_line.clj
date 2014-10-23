@@ -90,12 +90,21 @@
         command-spec)
       (doto (DumperOptions.) (.setDefaultScalarStyle DumperOptions$ScalarStyle/PLAIN))))
 
-(defn quit [& {:keys [msg cmdspec exception exit-code] :or {exit-code 0}}]
+(defn- quit* [{:keys [msg cmdspec exception exit-code] :or {exit-code 0}}]
   (if cmdspec (print-usage cmdspec))
   (if (and msg (= 0 exit-code)) (println msg "\n"))
   (if (and msg (not= 0 exit-code)) (println (format "ERROR%n%n%s%n" msg)))
   (if exception (print-stack-trace exception))
   (System/exit exit-code))
+
+(defn quit [& {:keys [msg cmdspec exception exit-code] :as args :or {exit-code 0}}]
+  (quit* args))
+
+(defn quit-by-error [ex]
+  (quit* (:data (ex-data ex))))
+
+(defn error [& {:keys [msg cmdspec exception exit-code] :as data :or {exit-code 0}}]
+  (throw (ex-info msg {:data data})))
 
 (defn- defaults-from-cmd-spec
   "cmd-spec is a coll of tuples. Extract the default values (i.e. the optional

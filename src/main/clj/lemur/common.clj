@@ -17,14 +17,14 @@
   are not relied upon by core lemur (except for the core base), but may be used in
   your own jobdefs."
   (:use
-    [lemur.core :only [lfn]]
-    [lemur.command-line :only [extract-cl-args quit]])
+    [lemur.core :only [lfn]])
   (:require
     [clojure.string :as s]
     [clojure.java.io :as io]
     [clojure.tools.logging :as log]
     [com.climate.shell :as sh]
     [com.climate.io :as ccio]
+    [lemur.command-line :as cli]
     [lemur.util :as util]
     [com.climate.services.aws.s3 :as s3]
     [com.climate.services.aws.emr :as emr])
@@ -167,9 +167,9 @@
          :or {mini-spec [] min 0 max Integer/MAX_VALUE empty false required []}}
           args]
     (when (and (seq required) (empty? mini-spec))
-      (quit :exit-code 1 :msg "(val-remaining) call has a :required clause, but not a :mini-spec"))
+      (cli/error :exit-code 1 :msg "(val-remaining) call has a :required clause, but not a :mini-spec"))
     (lfn [remaining]
-      (let [[remaining-opts remaining-args] (extract-cl-args mini-spec remaining)
+      (let [[remaining-opts remaining-args] (cli/extract-cl-args mini-spec remaining)
             results (vector
                       (if-not (>= (count remaining-args) min)
                         (err remaining-opts remaining-args "Must contain at least %s elements" min))
@@ -220,13 +220,13 @@
             file))]
     (sh/sh "diff" "-u" (.getPath leftf) (.getPath rightf) :out :pass)))
 
-(defn- quit-on-failure
+(defn- error-on-failure
   "First arg is the result of com.climate.shell/sh (a map). If the sh result
   indicates a failure, via it's :exit value, then quit with the given msg for
   output. The exit-code of the process will be the :exit value from the map."
   [sh-result msg]
   (when-not (zero? (:exit sh-result))
-    (quit :msg msg :exit-code (:exit sh-result))))
+    (cli/error :msg msg :exit-code (:exit sh-result))))
 
 (defn diff-test-data
   "Validate test data against known expected results. Creates a fn suitable for
@@ -252,7 +252,7 @@
   [& tests]
   (fn [eopts _]
     (doseq [[name path] tests]
-      (quit-on-failure
+      (error-on-failure
         (diff-parts
           (str (:test-uri eopts) "/expected/" path)
           (str (:data-uri eopts) "/" path))
