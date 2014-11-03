@@ -85,7 +85,7 @@ calls launch              - take action (upload files, start cluster, etc)
   (atom default-context))
 
 ;; Make tests happy by having a context and setting the context
-(def context (create-context))
+(defonce context (create-context))
 (def ^:dynamic *context* context)
 
 (defmacro in-context [& body]
