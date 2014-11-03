@@ -97,14 +97,14 @@
   (if exception (print-stack-trace exception))
   (System/exit exit-code))
 
-(defn quit [& {:keys [msg cmdspec exception exit-code] :as args :or {exit-code 0}}]
+(defn quit [& args]
   (quit* args))
 
 (defn quit-by-error [ex]
   (quit* (:data (ex-data ex))))
 
-(defn error [& {:keys [msg cmdspec exception exit-code] :as data :or {exit-code 0}}]
-  (throw (ex-info msg {:data data})))
+(defn error [& {:keys [msg] :as args}]
+  (throw (ex-info msg {:data args})))
 
 (defn- defaults-from-cmd-spec
   "cmd-spec is a coll of tuples. Extract the default values (i.e. the optional
