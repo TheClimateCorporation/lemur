@@ -92,23 +92,16 @@ calls launch              - take action (upload files, start cluster, etc)
   `(binding [*context* (create-context)]
      ~@body))
 
-(defn assert-context-given []
-  (when (instance? clojure.lang.Var$Unbound *context*)
-    (throw (ex-info "No context was given. Wrap your code with `(in-context ...)" {}))))
-
 (defn context-get
   [k]
-  (assert-context-given)
   (get @*context* k))
 
 (defn context-set
   [k v]
-  (assert-context-given)
   (swap! *context* #(assoc % k v)))
 
 (defn context-update
   [keys f]
-  (assert-context-given)
   (swap! *context*
          (fn [c] (update-in c keys f))))
 
