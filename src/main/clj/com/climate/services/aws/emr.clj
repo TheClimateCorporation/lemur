@@ -235,10 +235,14 @@
 
 (defn step-config [name alive? jar-path main-class cli-args & {:keys [action-on-failure properties]}]
   "Create a step to be submitted to EMR.
-  jar-path is the hadoop job jar, usually an s3:// path.
-  cli-args is a collection of Strings that are passed as args to main-class (can be nil).
-  action-on-failure is a String or enum com.amazonaws.services.elasticmapreduce.model.ActionOnFailure.
-  properties is a map of Java properties that are set when the step runs."
+  Inputs:
+    name - An symbolic name for this step
+    alive? - Whether or not the Step should be run as keep-alive (i.e. don't terminate the cluster)
+    jar-path is the hadoop job jar, usually an s3:// path.
+    main-class - A String containing the fully qualified class name with a main function or nil
+    cli-args is a collection of Strings that are passed as args to main-class (can be nil).
+    action-on-failure is a String or enum com.amazonaws.services.elasticmapreduce.model.ActionOnFailure.
+    properties is a map of Java properties that are set when the step runs."
   (let [sc (StepConfig. name
                         (doto
                           (HadoopJarStepConfig.)
