@@ -81,23 +81,25 @@
       (s3/put-object-string bucket "data/simple.txt"
         "line1 a b
         line2 c d")
-
       (println "These tests take a long time to run, and provide no feedback while running."
                "Try 'elastic-mapreduce --list' for an idea of where it's at.")
-      (start-job-flow
-        test-flow-name
-        [(step-config
-          "stream-step"
-          false
-          "/home/hadoop/contrib/streaming/hadoop-streaming.jar"
-          nil
-          ["-input" (format "s3://%s/data/simple.txt" bucket)
-           "-output" "/out"
-           "-mapper" (format "s3://%s/scripts/wc.sh" bucket)])]
-        @*flow-args*))))
+      (let [jf (start-job-flow
+                 test-flow-name
+                 [(step-config
+                    "stream-step"
+                    false
+                    "/home/hadoop/contrib/streaming/hadoop-streaming.jar"
+                    nil
+                    ["-input" (format "s3://%s/data/simple.txt" bucket)
+                     "-output" "/out"
+                     "-mapper" (format "s3://%s/scripts/wc.sh" bucket)])]
+                 @*flow-args*)]
+        (println "Started jobflow, id =" jf)
+        jf))))
 
-; These tests are specified as functions rather than a test. This is a hack to force it to run before
-; test-wait-on-step.  It will fail if the cluster has already COMPLETED.
+; These tests are specified as functions rather than a test. This is a hack to
+; force it to run before test-wait-on-step.  It will fail if the cluster has
+; already COMPLETED.
 (defn test-flow-for-name-and-types
   []
   (with-emr
@@ -125,15 +127,13 @@
       (binding [;; NOTE(lbarrett): Bind flow-args to an atom because we deref
                 ;; it when it's used because it's normally a delay (so we can
                 ;; run non-integration tests).
-                *flow-args* (atom (conj @*flow-args* {:keep-alive true}))]
+                *flow-args* (atom @*flow-args*)]
         (let [jf-id (setup)
               dummy-steps (make-dummy-step)]
           (is= 1 (.size (steps-for-jobflow jf-id)))
           (add-steps jf-id [dummy-steps])
           (Thread/sleep 2000)
-          (is= 2 (.size (steps-for-jobflow jf-id)))
-          ;(terminate-flow-id jf-id)
-          )))))
+          (is= 2 (.size (steps-for-jobflow jf-id))))))))
 
 (defn test-step-status
   []
