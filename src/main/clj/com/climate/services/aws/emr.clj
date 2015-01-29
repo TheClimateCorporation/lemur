@@ -268,10 +268,12 @@
   Parse it into a sequence of Tag objects."
   [tags]
   (letfn [(->tag [[k v]] (Tag. k v))]
-    (->> (s/split tags #",")
-         (map s/trim)
-         (map #(s/split % #"="))
-         (map ->tag))))
+    (if (empty? tags)
+      []
+      (->> (s/split tags #",")
+           (map s/trim)
+           (map #(s/split % #"="))
+           (map ->tag)))))
 
 (defn start-job-flow [name steps {:keys [log-uri bootstrap-actions ami-version
                                          supported-products visible-to-all-users
