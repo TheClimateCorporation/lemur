@@ -160,7 +160,7 @@
   ;:master-instance-type "m1.large"
 
   ;EMR Cluster tags
-  ;Provide comma-separated list of key=value pairs, which will be used to
+  ;Provide a comma-separated list of key=value pairs, which will be used to
   ;create tags for instances in your EMR cluster
   ;read more at
   ;http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/emr-plan-tags.html

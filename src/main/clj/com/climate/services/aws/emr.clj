@@ -264,7 +264,7 @@
     (.addJobFlowSteps *emr* (AddJobFlowStepsRequest. jobflow-id steps))))
 
 (defn- parse-tags
-  "tags is of format \"key0:value0,key1:value1,key2:value2\".
+  "tags is of format \"key0=value0,key1=value1,key2=value2\".
   Parse it into a sequence of Tag objects."
   [tags]
   (letfn [(->tag [[k v]] (Tag. k v))]
