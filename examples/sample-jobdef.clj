@@ -159,6 +159,12 @@
   ;Instance type for master
   ;:master-instance-type "m1.large"
 
+  ;EMR Cluster tags
+  ;Provide comma-separated list of key=value pairs, which will be used to
+  ;create tags for instances in your EMR cluster
+  ;read more at
+  ;http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/emr-plan-tags.html
+  ;:tags "fake:project=fightingcrime,fake:group=ateam"
   ; Uncomment to attempt to get additional nodes via the spot market
   ; This example requests up to 30 additional m1.xlarge nodes, and we are willing to
   ; pay up to 80% of the difference between the reserve price and the demand price.
