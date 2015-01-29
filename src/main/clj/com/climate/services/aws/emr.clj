@@ -4,7 +4,7 @@
   (:require
     [lemur.util :as util]
     [clojure.tools.logging :as log]
-    [clojure.string :as string]
+    [clojure.string :as s]
     [com.climate.services.aws.ec2 :as ec2])
   (:import
     java.io.File
@@ -25,6 +25,7 @@
       ScriptBootstrapActionConfig
       StepConfig
       StepDetail
+      Tag
       TerminateJobFlowsRequest]))
 
 ; TODO All functions that use this dynamic var should have an additional fn
@@ -262,17 +263,32 @@
   (let [steps-array (to-array steps)]
     (.addJobFlowSteps *emr* (AddJobFlowStepsRequest. jobflow-id steps))))
 
+(defn- parse-tags
+  "tags is of format \"key0=value0,key1=value1,key2=value2\".
+  Parse it into a sequence of Tag objects."
+  [tags]
+  (letfn [(->tag [[k v]] (Tag. k v))]
+    (if (empty? tags)
+      []
+      (->> (s/split tags #",")
+           (map s/trim)
+           (map #(s/split % #"="))
+           (map ->tag)))))
+
 (defn start-job-flow [name steps {:keys [log-uri bootstrap-actions ami-version
                                          supported-products visible-to-all-users
-                                         job-flow-role service-role]
-                                  :or {bootstrap-actions [] supported-products [] visible-to-all-users false}
+                                         job-flow-role service-role tags]
+                                  :or {bootstrap-actions []
+                                       supported-products []
+                                       visible-to-all-users false}
                                   :as all}]
   (log/info (str "Starting JobFlow " all))
   (let [instances (instances-config all)
         request (doto (RunJobFlowRequest.)
                       (.setName name)
-                      (.setLogUri log-uri) ;can be nil (i.e. no logs)
+                      (.setLogUri log-uri) ; can be nil (i.e. no logs)
                       (.setInstances instances)
+                      (.setTags (parse-tags tags)) ; can be an empty list
                       (.setAmiVersion ami-version)
                       (.setServiceRole service-role)
                       (.setJobFlowRole job-flow-role)
@@ -281,6 +297,7 @@
                       (.setVisibleToAllUsers visible-to-all-users)
                       (.setSteps steps))]
     (.getJobFlowId (.runJobFlow *emr* request))))
+
 
 (defn- parse-spot-task-bid
   "type is an instance-type string.  arg is a percent (\"25%\") or fixed price (\"0.85\")
@@ -306,7 +323,7 @@
   [spot-task-group]
   (when spot-task-group
     (let [[spot-task-type spot-task-bid spot-task-num]
-            (string/split spot-task-group #",")
+            (s/split spot-task-group #",")
           spot-task-num (Integer. spot-task-num)
           spot-task-bid (parse-spot-task-bid spot-task-type spot-task-bid)]
       [spot-task-type spot-task-bid spot-task-num])))
