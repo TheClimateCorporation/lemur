@@ -150,21 +150,20 @@
   ; NO DEFAULT
   ;:runtime-jar "s3://com.your-co.${env}.hadoop/marc/my-hadoop-java.jar"
 
-  ;Number of instances (including the master)
+  ; Number of instances (including the master)
   ;:num-instances 1
 
-  ;Instance type for slaves
+  ; Instance type for slaves
   ;:slave-instance-type "m1.large"
 
-  ;Instance type for master
+  ; Instance type for master
   ;:master-instance-type "m1.large"
 
-  ;EMR Cluster tags
-  ;Provide a comma-separated list of key=value pairs, which will be used to
-  ;create tags for instances in your EMR cluster
-  ;read more at
-  ;http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/emr-plan-tags.html
+  ; Provide a comma-separated list of key=value pairs, which will be used to
+  ; create tags for instances in your EMR cluster. Read more at
+  ; http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/emr-plan-tags.html
   ;:tags "fake:project=fightingcrime,fake:group=ateam"
+
   ; Uncomment to attempt to get additional nodes via the spot market
   ; This example requests up to 30 additional m1.xlarge nodes, and we are willing to
   ; pay up to 80% of the difference between the reserve price and the demand price.
