@@ -1,5 +1,9 @@
 CHANGES
 
+1.4.4
+
+- EMR instance tags can be specified in cluster configuration
+
 1.4.3
 
 - Fix binary argument passthrough (e.g. "--no-bar")
