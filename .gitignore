@@ -11,3 +11,5 @@
 /tmp
 /.idea
 /lemur.iml
+/.lein-repl-history
+/.nrepl-port

@@ -15,7 +15,7 @@
 (ns lemur.core-test
   (:use
     lemur.core
-    [lemur.command-line :only [quit]]
+    [lemur.command-line :only [quit error]]
     [lemur.evaluating-map :only [evaluating-map]]
     [lemur.common :only [eoval]]
     midje.sweet
@@ -124,7 +124,7 @@
   (fact
     (full-options {:a 1 :b 2 :prof1 {:args.foo 1}}) => anything
     (provided
-      (quit :msg (as-checker string?) :exit-code 22) => anything :times 1)))
+      (error :msg (as-checker string?) :exit-code 22) => anything :times 1)))
 
 (deftest test-process-args-with-full-options
   (let [process-args-if-needed (ns-resolve 'lemur.core 'process-args-if-needed)]
@@ -193,7 +193,7 @@
       (mk-steps (assoc cluster :args.extra 1) [foo-step])
         => anything
       (provided
-        (quit :msg (as-checker string?) :exit-code 20) => anything :times 1))))
+        (error :msg (as-checker string?) :exit-code 20) => anything :times 1))))
 
 (deftest test-lfn
   (let [register (atom 0)

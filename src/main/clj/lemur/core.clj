@@ -14,13 +14,13 @@
 
 (ns lemur.core
   (:use
-    lemur.command-line
     [lemur.bootstrap-actions :only [mk-bootstrap-actions
                                     hadoop-config-details
                                     bootstrap-actions-details]]
     [clojure.pprint :only [cl-format]])
   (:require
     clojure.set
+    [lemur.command-line :as cli]
     [lemur.evaluating-map]
     [com.climate.shell :as sh]
     [com.climate.io :as ccio]
@@ -37,8 +37,7 @@
     com.amazonaws.services.elasticmapreduce.model.StepConfig
     [org.yaml.snakeyaml DumperOptions
                         DumperOptions$FlowStyle
-                        DumperOptions$ScalarStyle])
-  (:gen-class))
+                        DumperOptions$ScalarStyle]))
 
 (comment
 
@@ -67,32 +66,43 @@ calls fire*               - interprets the structures (cluster, steps, options),
 calls launch              - take action (upload files, start cluster, etc)
 )
 
-(defonce context
-  (atom {:jobdef-path nil     ;The path of the jobdef file being processed, if any
-         :command nil         ;The lemur command, e.g. start, run, help, etc
-         :jobflow-id nil      ;The jobflow-id, populated after the cluster is launched
-         :request-ts nil      ;The timestamp of when the emr request was sent to AWS
-         :validators []       ;A collection of validator functions
-         :command-spec []     ;Command line options to parse for
-         :profiles []         ;List of profiles to apply (left-to-right)
-         :base {}             ;Base configuration
-         :hooks []            ;Actions to be performed pre- or post- fire!
-         :options {}          ;General options
-         :option-defaults {}  ;The default values from the command-spec
-         :remaining []        ;Remaining arguments from the command line after parsing out known options
-         :raw-args []}))      ;Raw args from command-line
+(def default-context
+  {:jobdef-path nil     ;The path of the jobdef file being processed, if any
+   :command nil         ;The lemur command, e.g. start, run, help, etc
+   :jobflow-id nil      ;The jobflow-id, populated after the cluster is launched
+   :request-ts nil      ;The timestamp of when the emr request was sent to AWS
+   :validators []       ;A collection of validator functions
+   :command-spec []     ;Command line options to parse for
+   :profiles []         ;List of profiles to apply (left-to-right)
+   :base {}             ;Base configuration
+   :hooks []            ;Actions to be performed pre- or post- fire!
+   :options {}          ;General options
+   :option-defaults {}  ;The default values from the command-spec
+   :remaining []        ;Remaining arguments from the command line after parsing out known options
+   :raw-args []})      ;Raw args from command-line
+
+(defn create-context []
+  (atom default-context))
+
+;; Make tests happy by having a context and setting the context
+(defonce context (create-context))
+(def ^:dynamic *context* context)
+
+(defmacro in-context [& body]
+  `(binding [*context* (create-context)]
+     ~@body))
 
 (defn context-get
   [k]
-  (get @context k))
+  (get @*context* k))
 
 (defn context-set
   [k v]
-  (swap! context #(assoc % k v)))
+  (swap! *context* #(assoc % k v)))
 
 (defn context-update
   [keys f]
-  (swap! context
+  (swap! *context*
          (fn [c] (update-in c keys f))))
 
 (defmacro defcommand
@@ -117,7 +127,7 @@ calls launch              - take action (upload files, start cluster, etc)
   "Trigger cli processing, if needed. Results are stored in @context."
   []
   (let [[defaults options remaining]
-          (process-args (context-get :raw-args) (context-get :command-spec))]
+          (cli/process-args (context-get :raw-args) (context-get :command-spec))]
     (context-set :remaining remaining)
     (context-set :option-defaults defaults)
     (context-set :options options))
@@ -188,7 +198,7 @@ calls launch              - take action (upload files, start cluster, etc)
         arg-vecs (get args-map true)
         arg-pairs (->> (get args-map false)
                     (partition 2))]
-    (add-command-spec* context (concat arg-vecs arg-pairs))))
+    (cli/add-command-spec* *context* (concat arg-vecs arg-pairs))))
 
 (defn- apply-profile
   "Override entries in the options with entries from the nested profile if one exists."
@@ -196,14 +206,14 @@ calls launch              - take action (upload files, start cluster, etc)
   (let [profile-map (get m profile)]
     ; check for common errors
     (when (and profile-map (not (map? profile-map)))
-      (quit :msg (format "The profile %s is not a Map; it's class is %s" profile (class profile-map))
-            :exit-code 21))
+      (cli/error :msg (format "The profile %s is not a Map; it's class is %s" profile (class profile-map))
+                 :exit-code 21))
     (when-let [arg-entries (seq (filter #(->> % key name (re-find #"^args\.")) profile-map))]
-      (quit :msg (format (str "Profile %s contains %s. To override arg values with a profile, "
-                              "specify the option name without the 'args.' prefix (e.g. {:foo 1} "
-                              "instead of {:args.foo 1}).")
-                         profile arg-entries)
-            :exit-code 22))
+      (cli/error :msg (format (str "Profile %s contains %s. To override arg values with a profile, "
+                                   "specify the option name without the 'args.' prefix (e.g. {:foo 1} "
+                                   "instead of {:args.foo 1}).")
+                              profile arg-entries)
+                 :exit-code 22))
     ; merge
     (if profile
       (dissoc (util/lemur-merge m profile-map) profile)
@@ -256,7 +266,7 @@ calls launch              - take action (upload files, start cluster, etc)
            (util/lemur-merge
              opts-after-profiles
              (context-get :options)
-             (select-keys @context [:command :jobdef-path :remaining]))]
+             (select-keys @*context* [:command :jobdef-path :remaining]))]
      (->> opts-after-command-line
        (filter #(-> % val nil? not))
        (into {})))))
@@ -314,7 +324,7 @@ calls launch              - take action (upload files, start cluster, etc)
             set
             (clojure.set/difference (set (seq (:args-order estep)))))]
     (when (pos? (count args-in-step-without-order))
-      (quit
+      (cli/error
         :msg (format (str "These args %s have values, but are not specified explicitly in "
                           "defstep (%s).  Args to your hadoop job step need to be explicitly "
                           "specified in defstep, so lemur will know what order to put them "
@@ -416,7 +426,7 @@ calls launch              - take action (upload files, start cluster, etc)
         ; verify hadoop location and version
 
         (when (empty? hadoop-bin)
-          (quit :exit-code 12 :msg (str "Could not find the hadoop binary. Install Hadoop 0.20.* "
+          (cli/error :exit-code 12 :msg (str "Could not find the hadoop binary. Install Hadoop 0.20.* "
                                         "locally and make sure 'hadoop' is in your path.")))
 
         (when (not (re-find #"Hadoop 0\.20\." hadoop-version))
@@ -443,7 +453,7 @@ calls launch              - take action (upload files, start cluster, etc)
           (let [result (apply sh/sh (concat cmd [:out :pass :env (sh/merge-env (:hadoop-env estep))]))]
             (if (zero? (:exit result))
               0
-              (quit :msg "hadoop process failed" :exit-code (:exit result)))))))))
+              (cli/error :msg "hadoop process failed" :exit-code (:exit result)))))))))
 
 (defmethod launch :run-or-start
   [command eopts cluster steps jobflow-options uploads metajob]
@@ -533,7 +543,7 @@ calls launch              - take action (upload files, start cluster, etc)
             (or (and to (string? xval) (empty? acc))
                 (and to (= xval :to))
                 (and to (coll? xval)))
-              (quit :msg (format "Could not parse upload property (%s) in %s" x (:upload eopts)) :exit-code 1)
+              (cli/error :msg (format "Could not parse upload property (%s) in %s" x (:upload eopts)) :exit-code 1)
             (and to (string? xval))
               {:acc (conj (vec (butlast acc)) [(first (last acc)) xval]) :to false}
             (string? xval)
@@ -543,7 +553,7 @@ calls launch              - take action (upload files, start cluster, etc)
             (coll? xval)
               {:acc (conj acc (filter #(not= :to %) xval)) :to false}
             :default
-              (quit :msg (format "Could not parse upload property (%s) in %s" x (:upload eopts)) :exit-code 1))))
+              (cli/error :msg (format "Could not parse upload property (%s) in %s" x (:upload eopts)) :exit-code 1))))
       {:acc [] :to false}
       (:upload eopts))
     :acc))
@@ -552,11 +562,11 @@ calls launch              - take action (upload files, start cluster, etc)
   [command cluster steps]
   (let [evaluating-opts (lemur.evaluating-map/evaluating-map (full-options cluster) steps)
         ;When (dry-run?), validate won't exit immediately, so save the results to output at the end
-        validation-result (validate
-                            (context-get :validators)
-                            evaluating-opts
-                            (context-get :command-spec)
-                            (when-not (dry-run?) 3))]
+        validation-result (cli/validate
+                           (context-get :validators)
+                           evaluating-opts
+                           (context-get :command-spec)
+                           (when-not (dry-run?) 3))]
 
     (log/debug "FULL EVALUATING OPTIONS" evaluating-opts)
 
@@ -631,7 +641,7 @@ calls launch              - take action (upload files, start cluster, etc)
                  (->> (context-get :command-spec)
                    (map first)
                    ; don't include the default options-- they are represented in Environment or Joblow Options below
-                   (#(clojure.set/difference (set %) (set (map first init-command-spec))))
+                   (#(clojure.set/difference (set %) (set (map first cli/init-command-spec))))
                    (select-keys evaluating-opts))
                  (doto (DumperOptions.) (.setDefaultFlowStyle DumperOptions$FlowStyle/BLOCK)))
                (util/mk-yaml "Environment"
@@ -722,12 +732,11 @@ calls launch              - take action (upload files, start cluster, etc)
     (add-profiles :local))
   (cond
     (help?)
-      (quit :cmdspec (context-get :command-spec) :exit-code 0)
+      (cli/error :cmdspec (context-get :command-spec) :exit-code 0)
     (formatted-help?)
       (do
         (println "---")
-        (println (formatted-help (context-get :command-spec)))
-        (quit :exit-code 0))
+        (println (cli/formatted-help (context-get :command-spec))))
     :default
       (let [cluster (if (fn? cluster-arg)
                       (cluster-arg (lemur.evaluating-map/evaluating-map (full-options)))
@@ -739,11 +748,11 @@ calls launch              - take action (upload files, start cluster, etc)
                 (steps-for-active-profiles profile-steps))]
         (fire* (context-get :command) cluster steps))))
 
-(defn- execute-jobdef
+(defn execute-jobdef
   [file]
   (when-not file
-    (quit :msg "No jobdef file was supplied" :exit-code 1
-          :cmdspec (context-get :command-spec)))
+    (cli/error :msg "No jobdef file was supplied" :exit-code 1
+               :cmdspec (context-get :command-spec)))
   (let [job-ns (gensym (-> file ccio/basename (s/replace #"\.clj$" "")))]
     (log/debug (str "Jobdef namespace " job-ns))
     (binding [*ns* (create-ns job-ns)]
@@ -897,7 +906,7 @@ calls launch              - take action (upload files, start cluster, etc)
   `(let [~eopts-sym (lemur.evaluating-map/evaluating-map (full-options ~cluster ~step))]
      ~@body))
 
-(defn- display-types
+(defn display-types
   []
   (let [flds ["Family" :family "Instance" :type "CPUs" :cpu "Arch" :arch "Mem (gb)" :mem
               "IO speed" :io "Demand $" :us-east-demand "Reserve $" :us-east-reserve]
@@ -911,10 +920,9 @@ calls launch              - take action (upload files, start cluster, etc)
                      ~{~{~12<~a~>~}~%~}"
                     (take-nth 2 flds)
                     details)
-    (flush))
-  (quit))
+    (flush)))
 
-(defn- spot-price-history
+(defn spot-price-history
   []
   (let [flds ["Instance" (memfn getInstanceType) "Zone" (memfn getAvailabilityZone)
               "Timestamp" (memfn getTimestamp) "Spot $" (memfn getSpotPrice)]
@@ -928,8 +936,7 @@ calls launch              - take action (upload files, start cluster, etc)
                      ~{~{~12<~a~>~}~%~}"
                     (take-nth 2 flds)
                     details)
-    (flush))
-  (quit))
+    (flush)))
 
 (defmacro when-local-test
   "Execute the body if the :test profile is active and lemur was run with the local command."
@@ -937,36 +944,3 @@ calls launch              - take action (upload files, start cluster, etc)
   `(when (and (profile? :test) (local?))
      true ;default if body is empty
      ~@body))
-
-(defn -main
-  "Run lemur help."
-  [& [command & args]]
-  (add-command-spec* context init-command-spec)
-  (let [[profiles remaining] (split-with #(.startsWith % ":") args)
-        aws-creds (awscommon/aws-credential-discovery)
-        jobdef-path (first remaining)]
-    (add-profiles profiles)
-    (context-set :jobdef-path jobdef-path)
-    (context-set :raw-args (rest remaining))
-    (context-set :command command)
-    (binding [s3/*s3* (s3/s3 aws-creds)
-              emr/*emr* (emr/emr aws-creds)
-              ec2/*ec2* (ec2/ec2 aws-creds)]
-      (case command
-        ("run" "start" "dry-run" "local" "submit")
-          (execute-jobdef jobdef-path)
-        "display-types"
-          (display-types)
-        "spot-price-history"
-          (spot-price-history)
-        "version"
-          (quit :msg (str "Lemur " (System/getenv "LEMUR_VERSION")))
-        "formatted-help"
-          (execute-jobdef jobdef-path)
-        "help"
-          (if jobdef-path
-            (execute-jobdef jobdef-path)
-            (quit :msg (slurp (io/resource "help.txt"))))
-        (quit :msg (if command (str "Unrecognized lemur command: " command))
-              :cmdspec (context-get :command-spec) :exit-code 1))))
-  (quit))

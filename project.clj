@@ -35,8 +35,7 @@
   :libdir-path "lib"
 
   :profiles {:dev {:plugins [[lein-midje "2.0.4"]]
-                   :dependencies [[midje "1.4.0"]
-                                  [org.clojure/tools.trace "0.7.3"]]}
+                   :dependencies [[midje "1.4.0"]]}
              :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
              :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}}
 
@@ -44,12 +43,12 @@
   :main ^:skip-aot lemur.repl
   :min-lein-version "2.0.0"
 
-  :run-aliases {:lemur lemur.core}
+  :run-aliases {:lemur lemur.tool}
 
   :test-selectors {:default (fn [v] (not (or (:integration v) (:manual v))))
                    :integration :integration
                    :manual :manual
                    :all (fn [v] (not (:manual v)))}
 
-  :aot [lemur.core]
+  :aot [lemur.tool]
   )
