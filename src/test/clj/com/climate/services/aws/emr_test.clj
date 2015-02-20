@@ -20,9 +20,9 @@
     midje.sweet)
   (:require
     [com.climate.services.aws
+     [common :as awscommon]
      [s3 :as s3]
-     [ec2 :as ec2]
-     [common :as awscommon]])
+     [ec2 :as ec2]])
   (:import
    com.amazonaws.services.elasticmapreduce.util.StepFactory
     [com.amazonaws.services.elasticmapreduce.model
@@ -39,7 +39,7 @@
 (def bucket "lemur.unit.emr")
 (def test-flow-name "com.climate.services.aws.emr-test")
 
-(def aws-creds (delay (awscommon/aws-credential-discovery)))
+(def aws-creds (delay (awscommon/aws-credentials)))
 
 (def ^:dynamic *flow-args*
   (delay
@@ -49,7 +49,6 @@
                  "s3://elasticmapreduce/bootstrap-actions/configure-hadoop"
                  ["-m" "mapred.map.tasks.speculative.execution=false"])]
      :log-uri (str "s3://" bucket)
-     :keypair (:keypair aws-creds) ; the elastic-mapreduce credentials.json file as a keypair entry
      :ami-version "latest"
      :num-instances 2
      :master-type "m1.xlarge"
@@ -143,7 +142,7 @@
             state (step-status jf "stream-step")]
         (is (contains? #{"PENDING" "RUNNING" "COMPLETED"} state))))))
 
-(deftest ^{:manual true} test-wait-on-step
+(deftest ^:manual test-wait-on-step
   (with-emr
     ; Run these two tests before wait-on-step, so the cluster will still be alive for them
     (test-flow-for-name-and-types)
@@ -158,7 +157,7 @@
         (is (map? result))
         (is (:success result))))))
 
-(deftest ^{:manual true} test-job-flow-detail
+(deftest ^:manual test-job-flow-detail
   (with-emr
     (testing "emr/job-flow-detail"
       (let [jf (setup)
@@ -169,7 +168,7 @@
         (is= jf (flow-id detail))
         (is (instance? String (-> detail .getExecutionStatusDetail .getState)))))))
 
-(deftest ^{:manual true} test-step-detail
+(deftest ^:manual test-step-detail
   (with-emr
     (testing "emr/step-detail"
       (let [jf (setup)

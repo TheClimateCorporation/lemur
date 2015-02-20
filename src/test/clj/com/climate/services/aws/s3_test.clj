@@ -30,7 +30,7 @@
 ;; needing S3 credentials.
 (defmacro with-s3
   [& body]
-  `(binding [*s3* (s3 (awscommon/aws-credential-discovery))]
+  `(binding [*s3* (s3 (awscommon/aws-credentials))]
      ~@body))
 
 (deftest test-slash+derivitives
@@ -58,7 +58,7 @@
   (is (not (s3path? nil)))
   (is (not (s3path? (File. "")))))
 
-(deftest ^{:integration true} test-copy-object
+(deftest ^:integration test-copy-object
   (with-s3
     (testing "s3/copy-object"
       (with-bucket test-bucket  (fn []
@@ -69,7 +69,7 @@
           (copy-object test-bucket key-a test-bucket key-b)
           (is (object? test-bucket key-b))))))))
 
-(deftest ^{:integration true} test-put-get-objects
+(deftest ^:integration test-put-get-objects
   (with-s3
     (with-bucket test-bucket (fn []
       (let [src-path "resources/log4j.properties"
@@ -128,7 +128,7 @@
     (is= (File. "/tmp/new-dir/d2/b") (new-s3-dest tmp-nd "d1/"    sample-full-key))
     (is= (File. "/tmp/new-dir/b")    (new-s3-dest tmp-nd "d1/d2/" sample-full-key))))
 
-(deftest ^{:integration true} test-cp
+(deftest ^:integration test-cp
   (with-s3
     (with-bucket test-bucket
       (fn []

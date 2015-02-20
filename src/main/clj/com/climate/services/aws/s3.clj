@@ -13,6 +13,7 @@
     com.amazonaws.services.s3.AmazonS3Client
     [com.amazonaws AmazonServiceException
                    ClientConfiguration]
+    [com.amazonaws.auth DefaultAWSCredentialsProviderChain]
     [com.amazonaws.services.s3.model Bucket
                                      PutObjectRequest
                                      ProgressListener
@@ -29,21 +30,17 @@
 
 ; TODO All functions that use this dynamic var should have an additional fn
 ;      signature where the object can be passed in explicitly
-(def ^{:dynamic true} *s3* nil)
+(def ^:dynamic *s3* nil)
 
-(defn s3-client [creds-object]
+(defn s3 [^DefaultAWSCredentialsProviderChain credentials]
   (AmazonS3Client.
-    creds-object
+    credentials
     (doto (ClientConfiguration.)
       ; Explicitly set some of the same values as the defaults
       (.setMaxErrorRetry 3)           ;default 3
       (.setSocketTimeout 10000)       ;default 50000 ms
       (.setConnectionTimeout 10000)   ;default 50000 ms
       (.setMaxConnections 50))))      ;default 50
-
-(defn s3
-  [creds]
-  (aws s3-client creds))
 
 (defn slash$?
   "Test if trailing slash exists"

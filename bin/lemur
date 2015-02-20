@@ -26,11 +26,6 @@ BASE=`cd $BASEDIR/..; pwd -P`
 
 export LEMUR_VERSION=`grep defproject $BASE/project.clj | sed -e 's/.*\"\(.*\)\".*/\1/'`
 
-# Look along-side this lemur executable for the AWS credentials
-if [ -z "$AWS_CREDENTIAL_FILE" -a -f "$BASEDIR/credentials.json" ]; then
-  export AWS_CREDENTIAL_FILE="$BASEDIR/credentials.json"
-fi
-
 # Warn if LEMUR_EXTRA_CLASSPATH is not set
 if [ -z "$LEMUR_EXTRA_CLASSPATH" ]; then
   echo WARNING: You might want to set env variable LEMUR_EXTRA_CLASSPATH to include \
