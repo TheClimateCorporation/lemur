@@ -29,7 +29,6 @@
     [clojure.tools.logging :as log]
     [lemur.util :as util]
     [com.climate.services.aws
-     [common :as awscommon]
      [ec2 :as ec2]
      [s3 :as s3]
      [emr :as emr]])
@@ -949,7 +948,7 @@ calls launch              - take action (upload files, start cluster, etc)
   (add-command-spec* context init-command-spec)
   (let [[profiles remaining] (split-with #(.startsWith % ":") args)
         jobdef-path (first remaining)
-        aws-creds (awscommon/aws-credentials)]
+        aws-creds (aws-credentials)]
     (add-profiles profiles)
     (context-set :jobdef-path jobdef-path)
     (context-set :raw-args (rest remaining))

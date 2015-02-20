@@ -18,7 +18,7 @@
     lemur.test
     clojure.test)
   (:require
-    [com.climate.services.aws.common :as awscommon]
+    [lemur.core :refer [aws-credentials]]
     [clojure.tools.logging :as log])
   (:import
     java.io.File
@@ -30,7 +30,7 @@
 ;; needing S3 credentials.
 (defmacro with-s3
   [& body]
-  `(binding [*s3* (s3 (awscommon/aws-credentials))]
+  `(binding [*s3* (s3 (aws-credentials))]
      ~@body))
 
 (deftest test-slash+derivitives

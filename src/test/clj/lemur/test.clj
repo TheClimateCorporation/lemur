@@ -14,9 +14,10 @@
 
 (ns lemur.test
   (:require
-    [com.climate.services.aws [s3 :as s3] [common :as awscommon]]
+    [com.climate.services.aws.s3 :as s3]
     [clojure.tools.logging :as log]
-    [clojure.test :as ct]))
+    [clojure.test :as ct]
+    [lemur.core :refer [aws-credentials]]))
 
 (defmacro is=
   "Use inside (deftest) to do an equality test."
@@ -32,7 +33,7 @@
   The bucket is not deleted if an exception is thrown in the function. This is done
   so that you can debug the problem."
   [bkt f]
-  (binding [s3/*s3* (s3/s3 (awscommon/aws-credentials))]
+  (binding [s3/*s3* (s3/s3 (aws-credentials))]
     ; Sanity check to guard against an accidental recursive delete
     (if-not (.contains bkt "unit")
       (throw (IllegalArgumentException.

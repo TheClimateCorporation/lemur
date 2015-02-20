@@ -20,9 +20,9 @@
     midje.sweet)
   (:require
     [com.climate.services.aws
-     [common :as awscommon]
      [s3 :as s3]
-     [ec2 :as ec2]])
+     [ec2 :as ec2]]
+    [lemur.core :refer [aws-credentials]])
   (:import
    com.amazonaws.services.elasticmapreduce.util.StepFactory
     [com.amazonaws.services.elasticmapreduce.model
@@ -39,7 +39,7 @@
 (def bucket "lemur.unit.emr")
 (def test-flow-name "com.climate.services.aws.emr-test")
 
-(def aws-creds (delay (awscommon/aws-credentials)))
+(def aws-creds (delay (aws-credentials)))
 
 (def ^:dynamic *flow-args*
   (delay
