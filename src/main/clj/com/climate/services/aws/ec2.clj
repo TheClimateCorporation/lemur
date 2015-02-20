@@ -9,19 +9,13 @@
      DescribeSpotPriceHistoryRequest
      DescribeInstancesRequest
      Filter]
-    [com.amazonaws.auth BasicAWSCredentials]
+    [com.amazonaws.auth AWSCredentialsProvider]
     [java.util Date GregorianCalendar]))
 
-(def ^{:dynamic true} *ec2* nil)
+(def ^:dynamic *ec2* nil)
 
-(defn ec2-client [aws-creds]
-  (AmazonEC2Client. aws-creds))
-
-; TODO All functions that use this dynamic var should have an additional fn
-;      signature where the object can be passed in explicitly
-(defn ec2
-  [creds]
-  (aws ec2-client creds))
+(defn ec2 [^AWSCredentialsProvider credentials]
+  (AmazonEC2Client. credentials))
 
 (def ec2-instance-details
   {"cc1.4xlarge"

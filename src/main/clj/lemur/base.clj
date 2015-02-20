@@ -16,7 +16,6 @@
   (:use
     lemur.core
     [lemur.common :only [val-opts]]
-    [com.climate.services.aws.common :only [aws-credential-discovery]]
     [lemur.bootstrap-actions :only [configure-hadoop]])
   (:require
     [clojure.tools.logging :as log]

@@ -36,24 +36,11 @@ Lemur does not try to replace elastic-mapreduce.  While there is some overlap, l
 2. cd $LEMUR_HOME
 3. lein jar     # assuming you have leiningen installed and on classpath
 1. set LEMUR_EXTRA_CLASSPATH to any classpath entries (colon separated) that you want lemur to include when it runs your jobdef. The classpath that includes you base files, or other functions or libraries for use by your jobdefs for example.
-1. [optional] set AWS_CREDENTIAL_FILE to a file with AWS credentials (see AWS Credentials below).
 
 ### AWS Credentials
 
-Interestingly, the various AWS services' supporting command-line tools all have different methods for getting access-key and secret-key.
+Lemur uses [DefaultAWSCredentialsProviderChain](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html) to gather AWS credentials to access various AWS services.
 
-elastic-mapreduce uses a JSON file.  CloudWatch, CloudSearch use a properties file identified by AWS_CREDENTIAL_FILE (although the key names are different in each case), and s3cmd looks for yet another properties file in ~/.s3cfg.
-
-You can explicitly set the creds with Environment variables: LEMUR_AWS_ACCESS_KEY and LEMUR_AWS_SECRET_KEY.
-
-Alternatively, Lemur will accept credentials in any of the file formats above. You can set the AWS_CREDENTIAL_FILE environment variable to a path of one of those files.  Or, it will look in either the PWD for credentials.json; or in `which elastic-mapreduce`/credentials.json.  If you want more detail, see com.climate.services.aws.common/aws-credential-discovery in this package.
-
-For reference, the JSON format is:
-
-```
-{"access_id": "EXAMPLEDV82HJBSHFAKE",
- "private_key": "Sample/GudsbGjjJuz0gf6asdgvxasdasdv521gd"}
-```
 ### Compatibility
 
 v0.9.7 Clojure 1.2

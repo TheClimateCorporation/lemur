@@ -10,7 +10,7 @@
     java.io.File
     com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient
     com.amazonaws.services.elasticmapreduce.util.StepFactory
-    com.amazonaws.auth.BasicAWSCredentials
+    [com.amazonaws.auth AWSCredentialsProvider]
     [com.amazonaws.services.elasticmapreduce.model
       ActionOnFailure
       AddJobFlowStepsRequest
@@ -28,16 +28,10 @@
       Tag
       TerminateJobFlowsRequest]))
 
-; TODO All functions that use this dynamic var should have an additional fn
-;      signature where the object can be passed in explicitly
-(def ^{:dynamic true} *emr* nil)
+(def ^:dynamic *emr* nil)
 
-(defn emr-client [aws-creds]
-  (AmazonElasticMapReduceClient. aws-creds))
-
-(defn emr
-  [creds]
-  (aws emr-client creds))
+(defn emr [^AWSCredentialsProvider credentials]
+  (AmazonElasticMapReduceClient. credentials))
 
 (def jobflow-tag "aws:elasticmapreduce:job-flow-id")
 

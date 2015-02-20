@@ -29,11 +29,11 @@
     [clojure.tools.logging :as log]
     [lemur.util :as util]
     [com.climate.services.aws
-     [common :as awscommon]
      [ec2 :as ec2]
      [s3 :as s3]
      [emr :as emr]])
   (:import
+    [com.amazonaws.auth DefaultAWSCredentialsProviderChain]
     com.amazonaws.services.elasticmapreduce.model.StepConfig
     [org.yaml.snakeyaml DumperOptions
                         DumperOptions$FlowStyle
@@ -938,13 +938,17 @@ calls launch              - take action (upload files, start cluster, etc)
      true ;default if body is empty
      ~@body))
 
+(defn aws-credentials
+  []
+  (DefaultAWSCredentialsProviderChain.))
+
 (defn -main
   "Run lemur help."
   [& [command & args]]
   (add-command-spec* context init-command-spec)
   (let [[profiles remaining] (split-with #(.startsWith % ":") args)
-        aws-creds (awscommon/aws-credential-discovery)
-        jobdef-path (first remaining)]
+        jobdef-path (first remaining)
+        aws-creds (aws-credentials)]
     (add-profiles profiles)
     (context-set :jobdef-path jobdef-path)
     (context-set :raw-args (rest remaining))

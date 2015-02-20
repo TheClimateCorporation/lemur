@@ -11,3 +11,5 @@
 /tmp
 /.idea
 /lemur.iml
+/.nrepl-port
+/releases
