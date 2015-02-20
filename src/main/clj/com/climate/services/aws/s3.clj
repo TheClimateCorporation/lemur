@@ -13,7 +13,7 @@
     com.amazonaws.services.s3.AmazonS3Client
     [com.amazonaws AmazonServiceException
                    ClientConfiguration]
-    [com.amazonaws.auth DefaultAWSCredentialsProviderChain]
+    [com.amazonaws.auth AWSCredentialsProvider]
     [com.amazonaws.services.s3.model Bucket
                                      PutObjectRequest
                                      ProgressListener
@@ -28,11 +28,9 @@
 ; TODO should use the TransferManager com.amazonaws.services.s3.transfer for
 ;      async transfers and better performance
 
-; TODO All functions that use this dynamic var should have an additional fn
-;      signature where the object can be passed in explicitly
 (def ^:dynamic *s3* nil)
 
-(defn s3 [^DefaultAWSCredentialsProviderChain credentials]
+(defn s3 [^AWSCredentialsProvider credentials]
   (AmazonS3Client.
     credentials
     (doto (ClientConfiguration.)

@@ -10,7 +10,7 @@
     java.io.File
     com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient
     com.amazonaws.services.elasticmapreduce.util.StepFactory
-    [com.amazonaws.auth DefaultAWSCredentialsProviderChain]
+    [com.amazonaws.auth AWSCredentialsProvider]
     [com.amazonaws.services.elasticmapreduce.model
       ActionOnFailure
       AddJobFlowStepsRequest
@@ -30,7 +30,7 @@
 
 (def ^:dynamic *emr* nil)
 
-(defn emr [^DefaultAWSCredentialsProviderChain credentials]
+(defn emr [^AWSCredentialsProvider credentials]
   (AmazonElasticMapReduceClient. credentials))
 
 (def jobflow-tag "aws:elasticmapreduce:job-flow-id")

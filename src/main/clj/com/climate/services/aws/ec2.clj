@@ -9,12 +9,12 @@
      DescribeSpotPriceHistoryRequest
      DescribeInstancesRequest
      Filter]
-    [com.amazonaws.auth DefaultAWSCredentialsProviderChain]
+    [com.amazonaws.auth AWSCredentialsProvider]
     [java.util Date GregorianCalendar]))
 
 (def ^:dynamic *ec2* nil)
 
-(defn ec2 [^DefaultAWSCredentialsProviderChain credentials]
+(defn ec2 [^AWSCredentialsProvider credentials]
   (AmazonEC2Client. credentials))
 
 (def ec2-instance-details
