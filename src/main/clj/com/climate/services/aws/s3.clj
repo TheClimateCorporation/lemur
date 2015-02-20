@@ -1,6 +1,4 @@
 (ns com.climate.services.aws.s3
-  (:use
-    com.climate.services.aws.common)
   (:require
     [com.climate.io :as ccio]
     [clojure.tools.logging :as log]
