@@ -1,5 +1,9 @@
 CHANGES
 
+1.4.5
+
+- Use DefaultAWSCredentialsProviderChain to discover AWS credentials
+
 1.4.4
 
 - EMR instance tags can be specified in cluster configuration
