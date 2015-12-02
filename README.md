@@ -30,7 +30,7 @@ Lemur does not try to replace elastic-mapreduce.  While there is some overlap, l
 
 ### Installation
 
-1. Download the latest tar-gzip (.tgz) from http://download.climate.com/lemur/releases/lemur-1.4.3.tgz
+1. Download the latest tar-gzip (.tgz) from http://download.climate.com/lemur/releases/lemur-1.4.6.tgz
 1. Expand into some install location
 1. set LEMUR_HOME to the top of the install path
 2. cd $LEMUR_HOME

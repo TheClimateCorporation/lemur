@@ -1,5 +1,9 @@
 CHANGES
 
+1.4.6
+
+- Avoid deprecated DescribeJobFlows API
+
 1.4.5
 
 - Use DefaultAWSCredentialsProviderChain to discover AWS credentials
