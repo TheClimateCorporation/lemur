@@ -53,6 +53,8 @@
      :num-instances 2
      :master-type "m1.xlarge"
      :slave-type "m1.xlarge"
+     :job-flow-role "EMR_EC2_DefaultRole"
+     :service-role "EMR_DefaultRole"
      :spot-task-type "m1.xlarge"
      :spot-task-bid "1.00"
      :spot-task-num 1
@@ -99,19 +101,6 @@
 ; These tests are specified as functions rather than a test. This is a hack to
 ; force it to run before test-wait-on-step.  It will fail if the cluster has
 ; already COMPLETED.
-(defn test-flow-for-name-and-types
-  []
-  (with-emr
-    (testing "emr/flow-for-name"
-      (let [jf (setup)]
-        (is (nil? (flow-for-name "non-existent")))
-        (is= jf (flow-id (flow-for-name test-flow-name)))))
-    (testing "non-default instance-types"
-      (let [jf (setup)
-            flow (flow-for-name test-flow-name)
-            instances (.getInstances flow)]
-        (is= "m1.xlarge" (.getMasterInstanceType instances))
-        (is= "m1.xlarge" (.getSlaveInstanceType instances))))))
 
 (defn make-dummy-step []
   (doto (StepConfig.)
@@ -145,7 +134,6 @@
 (deftest ^:manual test-wait-on-step
   (with-emr
     ; Run these two tests before wait-on-step, so the cluster will still be alive for them
-    (test-flow-for-name-and-types)
     (test-step-status)
     (test-add-steps-to-existing-flow-and-steps-for-jobflow)
     (testing "emr/wait-on-step"
@@ -159,22 +147,22 @@
 
 (deftest ^:manual test-job-flow-detail
   (with-emr
-    (testing "emr/job-flow-detail"
+    (testing "emr/cluster-for-id"
       (let [jf (setup)
-            detail (job-flow-detail jf)]
+            cluster (cluster-for-id jf)]
         (is (instance?
-              com.amazonaws.services.elasticmapreduce.model.JobFlowDetail
-              detail))
-        (is= jf (flow-id detail))
-        (is (instance? String (-> detail .getExecutionStatusDetail .getState)))))))
+              com.amazonaws.services.elasticmapreduce.model.Cluster
+              cluster))
+        (is= jf (cluster-id cluster))
+        (is (instance? String (-> cluster .getStatus .getState)))))))
 
-(deftest ^:manual test-step-detail
+(deftest ^:manual test-step-summary-by-name
   (with-emr
-    (testing "emr/step-detail"
+    (testing "emr/step-summary-by-name"
       (let [jf (setup)
-            sd (step-detail jf "stream-step")]
-        (is (instance? com.amazonaws.services.elasticmapreduce.model.StepDetail sd))
-        (is (nil? (step-detail jf "non-existant")))))))
+            sd (step-summary-by-name jf "stream-step")]
+        (is (instance? com.amazonaws.services.elasticmapreduce.model.StepSummary sd))
+        (is (nil? (step-summary-by-name jf "non-existant")))))))
 
 (deftest test-parse-spot-task-bid
   (let [parse-spot-task-bid (ns-resolve 'com.climate.services.aws.emr 'parse-spot-task-bid)]

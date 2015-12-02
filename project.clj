@@ -16,12 +16,14 @@
                  [org.clojure/data.json "0.1.2"]
                  [bultitude "0.2.0"]
 
-                 [com.amazonaws/aws-java-sdk "1.8.4"
-                  :exclusions [commons-codec]]
-                 [commons-codec "1.4"]
+                 [com.amazonaws/aws-java-sdk-emr "1.10.37"]
+                 [com.amazonaws/aws-java-sdk-s3 "1.10.37"]
+                 [com.amazonaws/aws-java-sdk-ec2 "1.10.37"]
+                 [commons-codec "1.10"]
+                 [org.apache.httpcomponents/httpclient "4.4.1"]
 
                  ; TODO these two are only to support hipchat-- isolate that functionality, so these libs can be optional
-                 [clj-http "0.1.3" :exclusions [commons-codec]]
+                 [clj-http "0.1.3" :exclusions [httpclient]]
                  [org.yaml/snakeyaml "1.7"]
 
                  ; TODO we should be able to consolidate on one or the other of these:
